@@ -3,6 +3,7 @@ import { useKV } from '@github/spark/hooks';
 import { Toaster } from '@/components/ui/sonner';
 import { ModeSelector } from '@/components/ModeSelector';
 import { AgentDisplay } from '@/components/AgentDisplay';
+import { AgentToolsDisplay } from '@/components/AgentToolsDisplay';
 import { PlanViewer } from '@/components/PlanViewer';
 import { ApiConfigurationWarning } from '@/components/ApiConfigurationWarning';
 import { ChatMode } from '@/components/modes/ChatMode';
@@ -11,6 +12,7 @@ import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
 import { useAgentSystem } from '@/hooks/use-agent-system';
 import { useVoiceRecognition } from '@/hooks/use-voice';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
+import { vectorService } from '@/lib/services/vector';
 import { toast } from 'sonner';
 
 function App() {
@@ -56,6 +58,22 @@ function App() {
     const userMessage = createMessage(text, 'user', undefined, isVoice);
     setMessages((prev) => [...prev, userMessage]);
 
+    // Store user message in vector database
+    try {
+      await vectorService.addDocument({
+        id: userMessage.id,
+        content: text,
+        metadata: {
+          type: 'user_message',
+          timestamp: userMessage.timestamp.toISOString(),
+          isVoice: isVoice || false,
+          mode,
+        },
+      });
+    } catch (error) {
+      console.error('Error storing message in vector DB:', error);
+    }
+
     try {
       if (mode === 'plan') {
         // Plan mode - create plan and ask for confirmation
@@ -69,6 +87,22 @@ function App() {
 
         setMessages((prev) => [...prev, plannerResponse]);
         setAwaitingConfirmation(true);
+        
+        // Store planner response in vector database
+        try {
+          await vectorService.addDocument({
+            id: plannerResponse.id,
+            content: plannerResponse.content,
+            metadata: {
+              type: 'agent_message',
+              agentType: 'planner',
+              timestamp: plannerResponse.timestamp.toISOString(),
+              isVoice: isVoice || false,
+            },
+          });
+        } catch (error) {
+          console.error('Error storing agent message in vector DB:', error);
+        }
         
         if (isVoice) {
           speak(plannerResponse.content);
@@ -192,6 +226,8 @@ function App() {
               agents={agents}
               currentAgent={currentAgent}
             />
+            
+            <AgentToolsDisplay />
             
             {currentPlan && (
               <PlanViewer

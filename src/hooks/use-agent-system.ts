@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Agent, AgentType, AgentStatus, Plan, PlanStep, Message } from '@/lib/types';
 import { openRouterService } from '@/lib/openrouter';
+import { agentTools, executeToolByName } from '@/lib/services/agent-tools';
+import { vectorService } from '@/lib/services/vector';
 import { useModelSelection } from './use-model-selection';
 
 const AGENTS: Agent[] = [
@@ -199,22 +201,34 @@ export function useAgentSystem() {
         
         switch (step.agentType) {
           case 'planner':
-            systemMessage = 'Ты - эксперт-аналитик. Проводишь глубокий анализ требований и планируешь реализацию.';
-            prompt = `Проанализируй следующую задачу: "${step.description}"\n\nОпиши детальный анализ требований и план реализации.`;
+            systemMessage = 'Ты - эксперт-аналитик. Проводишь глубокий анализ требований и планируешь реализацию. У тебя есть доступ к инструментам поиска и анализа.';
+            prompt = `Проанализируй следующую задачу: "${step.description}"\n\nОпиши детальный анализ требований и план реализации. Используй доступные инструменты если необходимо.`;
             break;
           case 'worker':
-            systemMessage = 'Ты - опытный разработчик. Пишешь качественный, рабочий код без заглушек и TODO.';
-            prompt = `Реализуй следующую задачу: "${step.description}"\n\nПредоставь полный рабочий код с комментариями.`;
+            systemMessage = 'Ты - опытный разработчик. Пишешь качественный, рабочий код без заглушек и TODO. У тебя есть доступ к инструментам генерации кода и анализа файлов.';
+            prompt = `Реализуй следующую задачу: "${step.description}"\n\nПредоставь полный рабочий код с комментариями. Используй инструменты code_generator и file_analysis если необходимо.`;
             break;
           case 'supervisor':
-            systemMessage = 'Ты - эксперт по качеству кода. Проверяешь соответствие стандартам и лучшим практикам.';
-            prompt = `Проверь выполнение задачи: "${step.description}"\n\nОцени качество реализации и соответствие стандартам.`;
+            systemMessage = 'Ты - эксперт по качеству кода. Проверяешь соответствие стандартам и лучшим практикам. У тебя есть доступ к инструментам анализа и поиска.';
+            prompt = `Проверь выполнение задачи: "${step.description}"\n\nОцени качество реализации и соответствие стандартам. Используй инструменты анализа и поиска для проверки.`;
             break;
           case 'error-fixer':
-            systemMessage = 'Ты - эксперт по отладке. Находишь и исправляешь ошибки, проводишь финальное тестирование.';
-            prompt = `Проведи финальную проверку задачи: "${step.description}"\n\nУбедись что все работает корректно и исправь любые проблемы.`;
+            systemMessage = 'Ты - эксперт по отладке. Находишь и исправляешь ошибки, проводишь финальное тестирование. У тебя есть доступ к инструментам поиска и анализа для поиска проблем.';
+            prompt = `Проведи финальную проверку задачи: "${step.description}"\n\nУбедись что все работает корректно и исправь любые проблемы. Используй доступные инструменты для поиска ошибок.`;
             break;
         }
+
+        // Store step in vector database for future reference
+        await vectorService.addDocument({
+          id: `agent_step_${step.id}`,
+          content: `Агент ${step.agentType}: ${step.description}`,
+          metadata: {
+            type: 'agent_step',
+            agentType: step.agentType,
+            planId: currentPlan.id,
+            stepId: step.id,
+          },
+        });
 
         agentResponse = await openRouterService.generateCompletion(
           prompt,
@@ -235,6 +249,20 @@ export function useAgentSystem() {
         };
 
         messages.push(message);
+        
+        // Store agent response in vector database
+        await vectorService.addDocument({
+          id: `agent_response_${message.id}`,
+          content: agentResponse,
+          metadata: {
+            type: 'agent_response',
+            agentType: step.agentType,
+            planId: currentPlan.id,
+            stepId: step.id,
+            timestamp: new Date().toISOString(),
+          },
+        });
+        
         updateAgentStatus(step.agentType, 'complete');
 
         const updatedStep = { ...step, status: 'complete' as const, result: agentResponse };

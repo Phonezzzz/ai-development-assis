@@ -7,7 +7,10 @@ import { VoiceInput } from '@/components/VoiceInput';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
-import { Volume2 } from '@phosphor-icons/react';
+import { ttsService } from '@/lib/services/tts';
+import { Volume2, Copy, Check } from '@phosphor-icons/react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface ChatModeProps {
   messages: Message[];
@@ -17,6 +20,8 @@ interface ChatModeProps {
 
 export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProps) {
   const { speak } = useVoiceRecognition();
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
 
   const getAgentInfo = (agentType: AgentType) => {
     const agentMap = {
@@ -28,8 +33,38 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
     return agentMap[agentType] || { name: 'Ассистент', avatar: '🤖', color: 'bg-gray-500' };
   };
 
-  const speakMessage = (text: string) => {
-    speak(text);
+  const speakMessage = async (text: string, messageId: string) => {
+    try {
+      setSpeakingMessageId(messageId);
+      await ttsService.speak(text);
+      toast.success('Сообщение воспроизведено');
+    } catch (error) {
+      console.error('TTS Error:', error);
+      // Fallback to browser speech
+      try {
+        await speak(text);
+      } catch (fallbackError) {
+        toast.error('Ошибка воспроизведения речи');
+      }
+    } finally {
+      setSpeakingMessageId(null);
+    }
+  };
+
+  const copyMessage = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      toast.success('Сообщение скопировано');
+      
+      // Reset copy indicator after 2 seconds
+      setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Copy Error:', error);
+      toast.error('Ошибка копирования');
+    }
   };
 
   return (
@@ -103,14 +138,35 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                       </div>
                       
                       {message.type === 'agent' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => speakMessage(message.content)}
-                          className="h-6 w-6 p-0 ml-2 opacity-50 hover:opacity-100"
-                        >
-                          <Volume2 size={12} />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyMessage(message.content, message.id)}
+                            className="h-6 w-6 p-0 opacity-50 hover:opacity-100"
+                            title="Скопировать сообщение"
+                          >
+                            {copiedMessageId === message.id ? (
+                              <Check size={12} className="text-green-500" />
+                            ) : (
+                              <Copy size={12} />
+                            )}
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => speakMessage(message.content, message.id)}
+                            disabled={speakingMessageId === message.id}
+                            className={cn(
+                              "h-6 w-6 p-0 opacity-50 hover:opacity-100",
+                              speakingMessageId === message.id && "opacity-100 text-accent"
+                            )}
+                            title="Воспроизвести сообщение"
+                          >
+                            <Volume2 size={12} />
+                          </Button>
+                        </div>
                       )}
                     </div>
                     

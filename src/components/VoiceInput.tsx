@@ -2,11 +2,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ModelSelector } from '@/components/ModelSelector';
+import { TTSConfiguration } from '@/components/TTSConfiguration';
 import { cn } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
 import { useModelSelection } from '@/hooks/use-model-selection';
 import { WorkMode } from '@/lib/types';
-import { Microphone, MicrophoneSlash, Brain, Lightning } from '@phosphor-icons/react';
+import { Microphone, MicrophoneSlash, Brain, Lightning, SpeakerHigh } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 
 interface VoiceInputProps {
@@ -24,6 +25,7 @@ export function VoiceInput({
 }: VoiceInputProps) {
   const [inputText, setInputText] = useState('');
   const [workMode, setWorkMode] = useState<WorkMode>(currentMode);
+  const [showTTSConfig, setShowTTSConfig] = useState(false);
   const { voiceState, startListening, stopListening, isSupported } = useVoiceRecognition();
   const { currentModel, isConfigured } = useModelSelection();
 
@@ -69,12 +71,27 @@ export function VoiceInput({
       <div className="flex items-center gap-2">
         <ModelSelector />
         
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowTTSConfig(!showTTSConfig)}
+          className="gap-2"
+        >
+          <SpeakerHigh size={16} />
+          TTS
+        </Button>
+        
         {!isConfigured && (
           <Badge variant="destructive" className="text-xs">
             Демо режим
           </Badge>
         )}
       </div>
+
+      {/* TTS Configuration */}
+      {showTTSConfig && (
+        <TTSConfiguration />
+      )}
 
       {/* Main Input */}
       <form onSubmit={handleSubmit} className="flex gap-2">

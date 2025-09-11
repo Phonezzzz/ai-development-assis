@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { VoiceState } from '@/lib/types';
+import { ttsService } from '@/lib/services/tts';
 
 export function useVoiceRecognition() {
   const [voiceState, setVoiceState] = useState<VoiceState>({
@@ -21,7 +22,7 @@ export function useVoiceRecognition() {
           const recognitionInstance = new SpeechRecognition();
           recognitionInstance.continuous = false;
           recognitionInstance.interimResults = true;
-          recognitionInstance.lang = 'en-US';
+          recognitionInstance.lang = 'ru-RU'; // Changed to Russian
           
           recognitionRef.current = recognitionInstance;
         }
@@ -106,23 +107,38 @@ export function useVoiceRecognition() {
     }
   }, []);
 
-  const speak = useCallback((text: string) => {
-    const synthesis = synthesisRef.current;
-    if (!synthesis) {
-      console.warn('Speech synthesis not available');
-      return;
-    }
-
+  const speak = useCallback(async (text: string) => {
     try {
-      synthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-      
-      synthesis.speak(utterance);
+      // Try ElevenLabs first, fallback to browser TTS
+      if (ttsService.isAvailable()) {
+        await ttsService.speak(text);
+      } else {
+        // Fallback to browser TTS
+        const synthesis = synthesisRef.current;
+        if (!synthesis) {
+          console.warn('Speech synthesis not available');
+          return;
+        }
+
+        synthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 0.8;
+        utterance.lang = 'ru-RU';
+        
+        synthesis.speak(utterance);
+      }
     } catch (error) {
       console.error('Error with speech synthesis:', error);
+      // Final fallback
+      const synthesis = synthesisRef.current;
+      if (synthesis) {
+        synthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ru-RU';
+        synthesis.speak(utterance);
+      }
     }
   }, []);
 
