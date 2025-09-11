@@ -4,14 +4,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { VoiceInput } from '@/components/VoiceInput';
-import { Message, AgentType } from '@/lib/types';
+import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
 import { Volume2 } from '@phosphor-icons/react';
 
 interface ChatModeProps {
   messages: Message[];
-  onSendMessage: (text: string, isVoice?: boolean) => void;
+  onSendMessage: (text: string, mode: WorkMode, isVoice?: boolean) => void;
   isProcessing: boolean;
 }
 
@@ -20,12 +20,12 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
 
   const getAgentInfo = (agentType: AgentType) => {
     const agentMap = {
-      planner: { name: 'Planner', avatar: '🧠', color: 'bg-blue-500' },
-      worker: { name: 'Worker', avatar: '⚡', color: 'bg-green-500' },
-      supervisor: { name: 'Supervisor', avatar: '👁️', color: 'bg-purple-500' },
-      'error-fixer': { name: 'Error Fixer', avatar: '🔧', color: 'bg-red-500' },
+      planner: { name: 'Планировщик', avatar: '🧠', color: 'bg-blue-500' },
+      worker: { name: 'Исполнитель', avatar: '⚡', color: 'bg-green-500' },
+      supervisor: { name: 'Супервизор', avatar: '👁️', color: 'bg-purple-500' },
+      'error-fixer': { name: 'Отладчик', avatar: '🔧', color: 'bg-red-500' },
     };
-    return agentMap[agentType] || { name: 'Assistant', avatar: '🤖', color: 'bg-gray-500' };
+    return agentMap[agentType] || { name: 'Ассистент', avatar: '🤖', color: 'bg-gray-500' };
   };
 
   const speakMessage = (text: string) => {
@@ -38,9 +38,9 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
         {messages.length === 0 ? (
           <Card className="p-8 text-center">
             <div className="text-4xl mb-4">💬</div>
-            <h3 className="font-semibold text-lg mb-2">Start a Conversation</h3>
+            <h3 className="font-semibold text-lg mb-2">Начните беседу</h3>
             <p className="text-muted-foreground">
-              Chat with the AI agent system. You can use voice input or type your messages.
+              Общайтесь с системой ИИ агентов. Вы можете использовать голосовой ввод или печатать сообщения.
             </p>
           </Card>
         ) : (
@@ -77,7 +77,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                       </Badge>
                       {message.isVoice && (
                         <Badge variant="outline" className="text-xs">
-                          Voice
+                          Голос
                         </Badge>
                       )}
                     </div>
@@ -122,7 +122,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
 
                 {message.type === 'user' && (
                   <Avatar className="w-8 h-8 bg-primary text-primary-foreground">
-                    <div className="text-sm font-semibold">U</div>
+                    <div className="text-sm font-semibold">П</div>
                   </Avatar>
                 )}
               </div>
@@ -134,7 +134,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
       <div className="p-4 border-t bg-background">
         <VoiceInput
           onSubmit={onSendMessage}
-          placeholder="Ask the agents anything..."
+          placeholder="Задайте вопрос агентам..."
           disabled={isProcessing}
         />
       </div>

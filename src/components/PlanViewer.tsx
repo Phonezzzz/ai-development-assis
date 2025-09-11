@@ -16,7 +16,7 @@ export function PlanViewer({ plan, onConfirmPlan, onExecutePlan, isExecuting }: 
   if (!plan) {
     return (
       <Card className="p-6 text-center">
-        <p className="text-muted-foreground">No active plan. Create a plan by chatting with the Planner agent.</p>
+        <p className="text-muted-foreground">Нет активного плана. Создайте план, общаясь с агентом-планировщиком.</p>
       </Card>
     );
   }
@@ -49,6 +49,21 @@ export function PlanViewer({ plan, onConfirmPlan, onExecutePlan, isExecuting }: 
     }
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'черновик';
+      case 'confirmed':
+        return 'подтверждён';
+      case 'executing':
+        return 'выполняется';
+      case 'complete':
+        return 'завершён';
+      default:
+        return status;
+    }
+  };
+
   return (
     <Card className="p-6 space-y-4">
       <div className="flex items-start justify-between">
@@ -57,12 +72,12 @@ export function PlanViewer({ plan, onConfirmPlan, onExecutePlan, isExecuting }: 
           <p className="text-muted-foreground text-sm mt-1">{plan.description}</p>
         </div>
         <Badge className={cn("capitalize", getStatusColor(plan.status))}>
-          {plan.status}
+          {getStatusText(plan.status)}
         </Badge>
       </div>
 
       <div className="space-y-3">
-        <h4 className="font-medium text-sm">Plan Steps:</h4>
+        <h4 className="font-medium text-sm">Шаги плана:</h4>
         {plan.steps.map((step, index) => (
           <div key={step.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
             <div className="flex-shrink-0 mt-0.5">
@@ -70,15 +85,18 @@ export function PlanViewer({ plan, onConfirmPlan, onExecutePlan, isExecuting }: 
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-medium">Step {index + 1}</span>
+                <span className="text-sm font-medium">Шаг {index + 1}</span>
                 <Badge variant="outline" className="text-xs">
-                  {step.agentType}
+                  {step.agentType === 'planner' ? 'планировщик' :
+                   step.agentType === 'worker' ? 'исполнитель' :
+                   step.agentType === 'supervisor' ? 'супервизор' :
+                   step.agentType === 'error-fixer' ? 'отладчик' : step.agentType}
                 </Badge>
               </div>
               <p className="text-sm text-foreground">{step.description}</p>
               {step.result && (
                 <div className="mt-2 p-2 bg-background rounded border text-xs">
-                  <p className="text-muted-foreground mb-1">Result:</p>
+                  <p className="text-muted-foreground mb-1">Результат:</p>
                   <div className="syntax-highlight">{step.result}</div>
                 </div>
               )}
@@ -90,7 +108,7 @@ export function PlanViewer({ plan, onConfirmPlan, onExecutePlan, isExecuting }: 
       <div className="flex gap-2 pt-4 border-t">
         {plan.status === 'draft' && (
           <Button onClick={onConfirmPlan} className="flex-1">
-            Confirm Plan
+            Подтвердить план
           </Button>
         )}
         {plan.status === 'confirmed' && (
@@ -99,12 +117,12 @@ export function PlanViewer({ plan, onConfirmPlan, onExecutePlan, isExecuting }: 
             disabled={isExecuting}
             className="flex-1"
           >
-            {isExecuting ? 'Executing...' : 'Execute Plan'}
+            {isExecuting ? 'Выполняется...' : 'Выполнить план'}
           </Button>
         )}
         {plan.status === 'complete' && (
           <div className="flex-1 text-center text-sm text-green-500 font-medium py-2">
-            ✓ Plan completed successfully
+            ✓ План выполнен успешно
           </div>
         )}
       </div>

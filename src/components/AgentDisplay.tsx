@@ -28,21 +28,21 @@ export function AgentDisplay({ agents, currentAgent, className }: AgentDisplayPr
   const getStatusLabel = (status: Agent['status']) => {
     switch (status) {
       case 'thinking':
-        return 'Thinking';
+        return 'Думает';
       case 'active':
-        return 'Active';
+        return 'Активен';
       case 'complete':
-        return 'Complete';
+        return 'Завершено';
       case 'error':
-        return 'Error';
+        return 'Ошибка';
       default:
-        return 'Idle';
+        return 'Ожидает';
     }
   };
 
   return (
     <Card className={cn("p-4", className)}>
-      <h3 className="font-semibold mb-3 text-sm text-foreground">Agent System</h3>
+      <h3 className="font-semibold mb-3 text-sm text-foreground">Система агентов</h3>
       <div className="space-y-3">
         {agents.map((agent) => (
           <div

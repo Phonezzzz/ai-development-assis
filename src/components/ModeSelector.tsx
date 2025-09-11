@@ -12,21 +12,21 @@ export function ModeSelector({ currentMode, onModeChange }: ModeSelectorProps) {
   const modes = [
     {
       id: 'chat' as const,
-      label: 'Chat Mode',
+      label: 'Чат',
       icon: MessageCircle,
-      description: 'Conversation with AI agents',
+      description: 'Беседа с ИИ агентами',
     },
     {
       id: 'image-creator' as const,
-      label: 'Image Creator',
+      label: 'Создание изображений',
       icon: Image,
-      description: 'Generate and edit images',
+      description: 'Генерация и редактирование изображений',
     },
     {
       id: 'workspace' as const,
-      label: 'Workspace',
+      label: 'Рабочее пространство',
       icon: Code,
-      description: 'Project files and code editor',
+      description: 'Файлы проекта и редактор кода',
     },
   ];
 

@@ -5,29 +5,29 @@ import { Agent, AgentType, AgentStatus, Plan, PlanStep, Message } from '@/lib/ty
 const AGENTS: Agent[] = [
   {
     id: 'planner',
-    name: 'Planner',
-    description: 'Creates detailed plans and clarifies requirements',
+    name: 'Планировщик',
+    description: 'Создает детальные планы и уточняет требования',
     status: 'idle',
     avatar: '🧠',
   },
   {
     id: 'worker',
-    name: 'Worker', 
-    description: 'Executes tasks and generates code',
+    name: 'Исполнитель', 
+    description: 'Выполняет задачи и генерирует код',
     status: 'idle',
     avatar: '⚡',
   },
   {
     id: 'supervisor',
-    name: 'Supervisor',
-    description: 'Oversees quality and ensures standards',
+    name: 'Супервизор',
+    description: 'Контролирует качество и соблюдение стандартов',
     status: 'idle',
     avatar: '👁️',
   },
   {
     id: 'error-fixer',
-    name: 'Error Fixer',
-    description: 'Identifies and fixes issues',
+    name: 'Отладчик',
+    description: 'Находит и исправляет ошибки',
     status: 'idle',
     avatar: '🔧',
   },
@@ -61,25 +61,25 @@ export function useAgentSystem() {
     const planSteps: PlanStep[] = [
       {
         id: 'step1',
-        description: 'Analyze user requirements and context',
+        description: 'Проанализировать требования пользователя и контекст',
         status: 'pending',
         agentType: 'planner',
       },
       {
         id: 'step2', 
-        description: 'Generate implementation code',
+        description: 'Сгенерировать код реализации',
         status: 'pending',
         agentType: 'worker',
       },
       {
         id: 'step3',
-        description: 'Review code quality and standards',
+        description: 'Проверить качество кода и соответствие стандартам',
         status: 'pending',
         agentType: 'supervisor',
       },
       {
         id: 'step4',
-        description: 'Fix any identified issues',
+        description: 'Исправить выявленные проблемы',
         status: 'pending',
         agentType: 'error-fixer',
       },
@@ -87,8 +87,8 @@ export function useAgentSystem() {
 
     const newPlan: Plan = {
       id: `plan_${Date.now()}`,
-      title: `Plan for: ${userInput.slice(0, 50)}...`,
-      description: `Comprehensive plan to address: ${userInput}`,
+      title: `План для: ${userInput.slice(0, 50)}...`,
+      description: `Комплексный план для выполнения: ${userInput}`,
       steps: planSteps,
       status: 'draft',
       createdAt: new Date(),
@@ -126,16 +126,16 @@ export function useAgentSystem() {
       
       switch (step.agentType) {
         case 'planner':
-          agentResponse = 'Requirements analyzed. Implementation plan validated.';
+          agentResponse = 'Требования проанализированы. План реализации проверен и готов к выполнению.';
           break;
         case 'worker':
-          agentResponse = '```typescript\n// Generated implementation code\nfunction implementFeature() {\n  console.log("Feature implemented successfully");\n  return { success: true };\n}\n```';
+          agentResponse = '```typescript\n// Сгенерированный код реализации\nfunction implementFeature() {\n  console.log("Функция успешно реализована");\n  return { success: true };\n}\n```';
           break;
         case 'supervisor':
-          agentResponse = 'Code review complete. Quality standards met. No issues found.';
+          agentResponse = 'Проверка кода завершена. Стандарты качества соблюдены. Проблем не выявлено.';
           break;
         case 'error-fixer':
-          agentResponse = 'Final validation complete. All systems operational.';
+          agentResponse = 'Финальная проверка завершена. Все системы работают корректно.';
           break;
       }
 

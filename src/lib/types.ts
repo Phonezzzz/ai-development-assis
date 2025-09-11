@@ -2,6 +2,15 @@ export type OperatingMode = 'chat' | 'image-creator' | 'workspace';
 
 export type AgentType = 'planner' | 'worker' | 'supervisor' | 'error-fixer';
 
+export type WorkMode = 'plan' | 'act';
+
+export interface ModelOption {
+  id: string;
+  name: string;
+  provider: string;
+  description?: string;
+}
+
 export type AgentStatus = 'idle' | 'thinking' | 'active' | 'complete' | 'error';
 
 export interface Agent {

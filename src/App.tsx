@@ -9,7 +9,7 @@ import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
 import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
 import { useAgentSystem } from '@/hooks/use-agent-system';
 import { useVoiceRecognition } from '@/hooks/use-voice';
-import { OperatingMode, Message } from '@/lib/types';
+import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
 import { toast } from 'sonner';
 
 function App() {
@@ -17,6 +17,7 @@ function App() {
   const [currentMode, setCurrentMode] = useKV<OperatingMode>('current-mode', 'chat');
   const [messages, setMessages] = useKV<Message[]>('chat-messages', []);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   
   // Memoize agent system and voice recognition to prevent unnecessary re-renders
   const agentSystem = useAgentSystem();
@@ -46,7 +47,7 @@ function App() {
     };
   }, []);
 
-  const handleSendMessage = useCallback(async (text: string, isVoice?: boolean) => {
+  const handleSendMessage = useCallback(async (text: string, mode: WorkMode, isVoice?: boolean) => {
     if (!text.trim()) return;
 
     setIsProcessing(true);
@@ -55,48 +56,69 @@ function App() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      if (text.toLowerCase().includes('plan') || text.toLowerCase().includes('create a plan')) {
+      if (mode === 'plan') {
+        // Plan mode - create plan and ask for confirmation
         const plan = await createPlan(text);
         
         const plannerResponse = createMessage(
-          `I've created a comprehensive plan for your request. The plan includes ${plan.steps.length} steps that will be handled by our agent system. Please review the plan and confirm if you'd like to proceed.`,
+          `Я создал подробный план для вашего запроса. План включает ${plan.steps.length} шагов:\n\n${plan.steps.map((step, i) => `${i + 1}. ${step.description}`).join('\n')}\n\nВы хотите выполнить этот план? Скажите "да" чтобы продолжить или "нет" чтобы изменить план.`,
           'agent',
           'planner'
         );
 
         setMessages((prev) => [...prev, plannerResponse]);
+        setAwaitingConfirmation(true);
         
         if (isVoice) {
           speak(plannerResponse.content);
         }
         
-        toast.success('Plan created successfully');
-      } else {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const agentResponse = createMessage(
-          `I understand your request: "${text}". I can help you with various tasks including planning, code generation, image creation, and workspace management. Would you like me to create a detailed plan for this task?`,
-          'agent',
-          'planner'
-        );
-
-        setMessages((prev) => [...prev, agentResponse]);
-        
-        if (isVoice) {
-          speak(agentResponse.content);
+        toast.success('План создан успешно');
+      } else if (mode === 'act') {
+        // Act mode - execute directly or confirm pending plan
+        if (awaitingConfirmation && currentPlan) {
+          if (text.toLowerCase().includes('да') || text.toLowerCase().includes('yes')) {
+            handleConfirmPlan();
+            await handleExecutePlan();
+            setAwaitingConfirmation(false);
+          } else {
+            const response = createMessage(
+              'Хорошо, давайте изменим план. Опишите что именно вы хотели бы изменить.',
+              'agent',
+              'planner'
+            );
+            setMessages((prev) => [...prev, response]);
+            if (isVoice) speak(response.content);
+            setAwaitingConfirmation(false);
+          }
+        } else {
+          // Direct execution - create plan and execute immediately
+          const plan = await createPlan(text);
+          confirmPlan();
+          
+          const agentMessages = await executePlan();
+          setMessages((prev) => [...prev, ...agentMessages]);
+          
+          agentMessages.forEach((message, index) => {
+            setTimeout(() => {
+              speak(message.content);
+            }, index * 1000);
+          });
+          
+          toast.success('Задача выполнена!');
         }
       }
     } catch (error) {
       console.error('Error processing message:', error);
-      toast.error('Failed to process message');
+      toast.error('Ошибка при обработке сообщения');
     } finally {
       setIsProcessing(false);
     }
-  }, [setMessages, createPlan, speak, createMessage]);
+  }, [setMessages, createPlan, speak, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan]);
 
   const handleConfirmPlan = useCallback(() => {
     confirmPlan();
-    toast.success('Plan confirmed! Ready to execute.');
+    toast.success('План подтвержден! Готов к выполнению.');
   }, [confirmPlan]);
 
   const handleExecutePlan = useCallback(async () => {
@@ -110,10 +132,10 @@ function App() {
         }, index * 1000);
       });
       
-      toast.success('Plan executed successfully!');
+      toast.success('План выполнен успешно!');
     } catch (error) {
       console.error('Error executing plan:', error);
-      toast.error('Failed to execute plan');
+      toast.error('Ошибка при выполнении плана');
     }
   }, [executePlan, setMessages, speak]);
 
@@ -144,9 +166,9 @@ function App() {
           <div className="flex items-center gap-3">
             <div className="text-2xl">🤖</div>
             <div>
-              <h1 className="text-xl font-bold">AI Agent Workspace</h1>
+              <h1 className="text-xl font-bold">Рабочее пространство ИИ агентов</h1>
               <p className="text-sm text-muted-foreground">
-                Intelligent development environment with voice capabilities
+                Интеллектуальная среда разработки с голосовыми возможностями
               </p>
             </div>
           </div>
