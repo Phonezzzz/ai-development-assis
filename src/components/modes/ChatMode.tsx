@@ -5,7 +5,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { VoiceInput } from '@/components/VoiceInput';
 import { Message, AgentType } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
 import { Volume2 } from '@phosphor-icons/react';
 
@@ -26,13 +26,6 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
       'error-fixer': { name: 'Error Fixer', avatar: '🔧', color: 'bg-red-500' },
     };
     return agentMap[agentType] || { name: 'Assistant', avatar: '🤖', color: 'bg-gray-500' };
-  };
-
-  const formatTimestamp = (date: Date) => {
-    return new Intl.DateTimeFormat('en', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
   };
 
   const speakMessage = (text: string) => {

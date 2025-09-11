@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { ProjectFile } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, formatDisplayDate } from '@/lib/utils';
 import { 
   File, 
   Folder, 
@@ -198,7 +198,7 @@ export function WorkspaceMode() {
                 <div>
                   <h3 className="font-semibold">{selectedFile.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {formatFileSize(selectedFile.size)} • Modified {selectedFile.lastModified.toLocaleDateString()}
+                    {formatFileSize(selectedFile.size)} • Modified {formatDisplayDate(selectedFile.lastModified)}
                   </p>
                 </div>
               </div>

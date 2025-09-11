@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GeneratedImage } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
+import { formatDisplayDate } from '@/lib/utils';
 import { Image, Download, Trash, Plus } from '@phosphor-icons/react';
 
 export function ImageCreatorMode() {
@@ -28,11 +29,11 @@ export function ImageCreatorMode() {
       isGenerating: true,
     };
 
-    setImages(prev => [newImage, ...prev]);
+    setImages((prev) => [newImage, ...prev]);
 
     // Simulate generation time
     setTimeout(() => {
-      setImages(prev => prev.map(img => 
+      setImages((prev) => prev.map(img => 
         img.id === newImage.id 
           ? { ...img, isGenerating: false }
           : img
@@ -45,7 +46,7 @@ export function ImageCreatorMode() {
   };
 
   const deleteImage = (imageId: string) => {
-    setImages(prev => prev.filter(img => img.id !== imageId));
+    setImages((prev) => prev.filter(img => img.id !== imageId));
   };
 
   const downloadImage = async (imageUrl: string, filename: string) => {
@@ -180,7 +181,7 @@ export function ImageCreatorMode() {
                   </p>
                   <div className="flex items-center justify-between">
                     <Badge variant="outline" className="text-xs">
-                      {image.timestamp.toLocaleDateString()}
+                      {formatDisplayDate(image.timestamp)}
                     </Badge>
                     {image.isGenerating && (
                       <Badge className="text-xs bg-accent text-accent-foreground">

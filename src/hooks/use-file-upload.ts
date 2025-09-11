@@ -54,18 +54,18 @@ export function useFileUpload() {
       }
     }
     
-    setFiles(prev => [...prev, ...processedFiles]);
+    setFiles((prev) => [...prev, ...processedFiles]);
     setIsProcessing(false);
     
     return processedFiles;
   }, [processFile]);
 
   const removeFile = useCallback((fileId: string) => {
-    setFiles(prev => prev.filter(file => file.id !== fileId));
+    setFiles((prev) => prev.filter(file => file.id !== fileId));
   }, []);
 
   const updateFileContent = useCallback((fileId: string, content: string) => {
-    setFiles(prev => prev.map(file => 
+    setFiles((prev) => prev.map(file => 
       file.id === fileId ? { ...file, content } : file
     ));
   }, []);

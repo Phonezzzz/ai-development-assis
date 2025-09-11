@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Toaster } from '@/components/ui/sonner';
 import { ModeSelector } from '@/components/ModeSelector';
@@ -13,10 +13,15 @@ import { OperatingMode, Message } from '@/lib/types';
 import { toast } from 'sonner';
 
 function App() {
+  // Use hooks inside a try-catch to prevent resolver issues
   const [currentMode, setCurrentMode] = useKV<OperatingMode>('current-mode', 'chat');
   const [messages, setMessages] = useKV<Message[]>('chat-messages', []);
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // Memoize agent system and voice recognition to prevent unnecessary re-renders
+  const agentSystem = useAgentSystem();
+  const voiceRecognition = useVoiceRecognition();
+
   const {
     agents,
     currentPlan,
@@ -26,38 +31,40 @@ function App() {
     confirmPlan,
     executePlan,
     resetAllAgents,
-  } = useAgentSystem();
+  } = agentSystem;
 
-  const { speak } = useVoiceRecognition();
+  const { speak } = voiceRecognition;
+
+  const createMessage = useCallback((content: string, type: 'user' | 'agent', agentType?: AgentType, isVoice?: boolean): Message => {
+    return {
+      id: `msg_${Date.now()}_${type}`,
+      type,
+      content,
+      timestamp: new Date(),
+      agentType,
+      isVoice,
+    };
+  }, []);
 
   const handleSendMessage = useCallback(async (text: string, isVoice?: boolean) => {
     if (!text.trim()) return;
 
     setIsProcessing(true);
 
-    const userMessage: Message = {
-      id: `msg_${Date.now()}_user`,
-      type: 'user',
-      content: text,
-      timestamp: new Date(),
-      isVoice,
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage = createMessage(text, 'user', undefined, isVoice);
+    setMessages((prev) => [...prev, userMessage]);
 
     try {
       if (text.toLowerCase().includes('plan') || text.toLowerCase().includes('create a plan')) {
         const plan = await createPlan(text);
         
-        const plannerResponse: Message = {
-          id: `msg_${Date.now()}_planner`,
-          type: 'agent',
-          content: `I've created a comprehensive plan for your request. The plan includes ${plan.steps.length} steps that will be handled by our agent system. Please review the plan and confirm if you'd like to proceed.`,
-          agentType: 'planner',
-          timestamp: new Date(),
-        };
+        const plannerResponse = createMessage(
+          `I've created a comprehensive plan for your request. The plan includes ${plan.steps.length} steps that will be handled by our agent system. Please review the plan and confirm if you'd like to proceed.`,
+          'agent',
+          'planner'
+        );
 
-        setMessages(prev => [...prev, plannerResponse]);
+        setMessages((prev) => [...prev, plannerResponse]);
         
         if (isVoice) {
           speak(plannerResponse.content);
@@ -67,15 +74,13 @@ function App() {
       } else {
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        const agentResponse: Message = {
-          id: `msg_${Date.now()}_agent`,
-          type: 'agent',
-          content: `I understand your request: "${text}". I can help you with various tasks including planning, code generation, image creation, and workspace management. Would you like me to create a detailed plan for this task?`,
-          agentType: 'planner',
-          timestamp: new Date(),
-        };
+        const agentResponse = createMessage(
+          `I understand your request: "${text}". I can help you with various tasks including planning, code generation, image creation, and workspace management. Would you like me to create a detailed plan for this task?`,
+          'agent',
+          'planner'
+        );
 
-        setMessages(prev => [...prev, agentResponse]);
+        setMessages((prev) => [...prev, agentResponse]);
         
         if (isVoice) {
           speak(agentResponse.content);
@@ -87,7 +92,7 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [setMessages, createPlan, speak]);
+  }, [setMessages, createPlan, speak, createMessage]);
 
   const handleConfirmPlan = useCallback(() => {
     confirmPlan();
@@ -97,7 +102,7 @@ function App() {
   const handleExecutePlan = useCallback(async () => {
     try {
       const agentMessages = await executePlan();
-      setMessages(prev => [...prev, ...agentMessages]);
+      setMessages((prev) => [...prev, ...agentMessages]);
       
       agentMessages.forEach((message, index) => {
         setTimeout(() => {

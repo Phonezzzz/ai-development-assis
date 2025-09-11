@@ -41,13 +41,13 @@ export function useAgentSystem() {
   const [currentAgent, setCurrentAgent] = useState<AgentType | null>(null);
 
   const updateAgentStatus = useCallback((agentId: AgentType, status: AgentStatus) => {
-    setAgents(prev => prev.map(agent => 
+    setAgents((prev) => prev.map(agent => 
       agent.id === agentId ? { ...agent, status } : agent
     ));
   }, []);
 
   const resetAllAgents = useCallback(() => {
-    setAgents(prev => prev.map(agent => ({ ...agent, status: 'idle' })));
+    setAgents((prev) => prev.map(agent => ({ ...agent, status: 'idle' })));
     setCurrentAgent(null);
     setIsWorking(false);
   }, []);
@@ -105,7 +105,7 @@ export function useAgentSystem() {
     
     const confirmedPlan = { ...currentPlan, status: 'confirmed' as const };
     setCurrentPlan(confirmedPlan);
-    setPlans(prev => [...prev, confirmedPlan]);
+    setPlans((prev) => [...prev, confirmedPlan]);
   }, [currentPlan, setCurrentPlan, setPlans]);
 
   const executePlan = useCallback(async (): Promise<Message[]> => {
