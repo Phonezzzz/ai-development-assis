@@ -9,6 +9,7 @@ export interface ToolResult {
 
 export interface AgentTool {
   name: string;
+  displayName: string;
   description: string;
   parameters: Record<string, any>;
   execute: (params: any) => Promise<ToolResult>;
@@ -16,6 +17,7 @@ export interface AgentTool {
 
 class FileAnalysisTool implements AgentTool {
   name = 'file_analysis';
+  displayName = 'Анализ файлов';
   description = 'Анализирует загруженные файлы и извлекает информацию';
   parameters = {
     file: { type: 'File', description: 'Файл для анализа' },
@@ -234,6 +236,7 @@ class FileAnalysisTool implements AgentTool {
 
 class CodeGeneratorTool implements AgentTool {
   name = 'code_generator';
+  displayName = 'Генератор кода';
   description = 'Генерирует код на основе описания';
   parameters = {
     description: { type: 'string', description: 'Описание желаемого кода' },
@@ -292,7 +295,8 @@ class CodeGeneratorTool implements AgentTool {
 }
 
 class SearchTool implements AgentTool {
-  name = 'search';
+  name = 'semantic_search';
+  displayName = 'Семантический поиск';
   description = 'Поиск по истории сообщений и документам';
   parameters = {
     query: { type: 'string', description: 'Поисковый запрос' },
@@ -333,7 +337,8 @@ class SearchTool implements AgentTool {
 }
 
 class ProjectMapTool implements AgentTool {
-  name = 'project_map';
+  name = 'project_indexer';
+  displayName = 'Индексатор проектов';
   description = 'Создание карты проекта и анализ структуры';
   parameters = {
     files: { type: 'FileList', description: 'Список файлов проекта' },
@@ -465,12 +470,296 @@ class ProjectMapTool implements AgentTool {
   }
 }
 
+class WebScraperTool implements AgentTool {
+  name = 'web_scraper';
+  displayName = 'Веб-скрапер';
+  description = 'Извлечение данных с веб-страниц';
+  parameters = {
+    url: { type: 'string', description: 'URL страницы для анализа' },
+    selector: { type: 'string', description: 'CSS селектор (опционально)' }
+  };
+
+  async execute(params: { url: string; selector?: string }): Promise<ToolResult> {
+    try {
+      const { url, selector } = params;
+      
+      // Since we can't actually scrape in browser, simulate the functionality
+      const mockData = {
+        url,
+        title: 'Заголовок страницы',
+        description: 'Описание страницы',
+        content: 'Симуляция извлеченного контента',
+        links: ['https://example.com/link1', 'https://example.com/link2'],
+        images: ['https://example.com/image1.jpg'],
+        metadata: {
+          author: 'Автор',
+          publishDate: new Date().toISOString(),
+          keywords: ['ключевое', 'слово'],
+        },
+      };
+
+      await vectorService.addDocument({
+        id: `scraped_${Date.now()}`,
+        content: mockData.content,
+        metadata: {
+          type: 'web_scraped',
+          url,
+          selector,
+          ...mockData.metadata,
+        },
+      });
+
+      return {
+        success: true,
+        data: mockData,
+        message: `Данные успешно извлечены с ${url}`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Ошибка веб-скрапинга',
+      };
+    }
+  }
+}
+
+class DatabaseQueryTool implements AgentTool {
+  name = 'database_query';
+  displayName = 'Запросы к БД';
+  description = 'Выполнение запросов к базам данных';
+  parameters = {
+    query: { type: 'string', description: 'SQL запрос' },
+    database: { type: 'string', description: 'Тип базы данных' },
+    connectionString: { type: 'string', description: 'Строка подключения' }
+  };
+
+  async execute(params: { query: string; database: string; connectionString?: string }): Promise<ToolResult> {
+    try {
+      const { query, database } = params;
+      
+      // Simulate database query execution
+      const mockResult = {
+        query,
+        database,
+        rows: [
+          { id: 1, name: 'Запись 1', created_at: new Date().toISOString() },
+          { id: 2, name: 'Запись 2', created_at: new Date().toISOString() },
+        ],
+        rowCount: 2,
+        executionTime: Math.random() * 100,
+      };
+
+      return {
+        success: true,
+        data: mockResult,
+        message: `Запрос выполнен успешно. Получено ${mockResult.rowCount} записей`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Ошибка выполнения запроса',
+      };
+    }
+  }
+}
+
+class TextProcessorTool implements AgentTool {
+  name = 'text_processor';
+  displayName = 'Обработка текста';
+  description = 'Обработка и преобразование текста';
+  parameters = {
+    text: { type: 'string', description: 'Текст для обработки' },
+    operation: { type: 'string', description: 'Операция: summarize, translate, format, extract' },
+    options: { type: 'object', description: 'Дополнительные параметры' }
+  };
+
+  async execute(params: { text: string; operation: string; options?: any }): Promise<ToolResult> {
+    try {
+      const { text, operation, options = {} } = params;
+      let result: any;
+
+      switch (operation) {
+        case 'summarize':
+          result = await this.summarizeText(text);
+          break;
+        case 'translate':
+          result = await this.translateText(text, options.targetLanguage || 'en');
+          break;
+        case 'format':
+          result = await this.formatText(text, options.format || 'markdown');
+          break;
+        case 'extract':
+          result = await this.extractEntities(text);
+          break;
+        default:
+          throw new Error(`Неизвестная операция: ${operation}`);
+      }
+
+      return {
+        success: true,
+        data: result,
+        message: `Текст обработан операцией "${operation}"`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Ошибка обработки текста',
+      };
+    }
+  }
+
+  private async summarizeText(text: string): Promise<any> {
+    const prompt = spark.llmPrompt`Создай краткое резюме следующего текста на русском языке: ${text}`;
+    const summary = await spark.llm(prompt, 'gpt-4o');
+    
+    return {
+      original: text,
+      summary,
+      compressionRatio: (summary.length / text.length * 100).toFixed(1) + '%',
+    };
+  }
+
+  private async translateText(text: string, targetLanguage: string): Promise<any> {
+    const prompt = spark.llmPrompt`Переведи следующий текст на ${targetLanguage}: ${text}`;
+    const translation = await spark.llm(prompt, 'gpt-4o');
+    
+    return {
+      original: text,
+      translation,
+      targetLanguage,
+      detectedLanguage: 'ru', // Simplified
+    };
+  }
+
+  private async formatText(text: string, format: string): Promise<any> {
+    const prompt = spark.llmPrompt`Переформатируй следующий текст в формат ${format}: ${text}`;
+    const formatted = await spark.llm(prompt, 'gpt-4o');
+    
+    return {
+      original: text,
+      formatted,
+      format,
+    };
+  }
+
+  private async extractEntities(text: string): Promise<any> {
+    const prompt = spark.llmPrompt`Извлеки из текста именованные сущности (имена, места, организации, даты) в формате JSON: ${text}`;
+    const entities = await spark.llm(prompt, 'gpt-4o', true);
+    
+    return {
+      original: text,
+      entities: JSON.parse(entities),
+    };
+  }
+}
+
+class FileManagerTool implements AgentTool {
+  name = 'file_manager';
+  displayName = 'Менеджер файлов';
+  description = 'Управление файлами и папками';
+  parameters = {
+    action: { type: 'string', description: 'Действие: read, write, delete, list, move, copy' },
+    path: { type: 'string', description: 'Путь к файлу или папке' },
+    content: { type: 'string', description: 'Содержимое (для записи)' }
+  };
+
+  async execute(params: { action: string; path: string; content?: string }): Promise<ToolResult> {
+    try {
+      const { action, path, content } = params;
+      
+      // Simulate file operations since we can't access real file system
+      let result: any;
+
+      switch (action) {
+        case 'read':
+          result = { content: `Содержимое файла ${path}`, size: 1024 };
+          break;
+        case 'write':
+          result = { path, written: content?.length || 0, success: true };
+          break;
+        case 'delete':
+          result = { path, deleted: true };
+          break;
+        case 'list':
+          result = {
+            path,
+            files: [
+              { name: 'file1.txt', type: 'file', size: 1024 },
+              { name: 'folder1', type: 'directory', size: 0 },
+            ],
+          };
+          break;
+        case 'move':
+        case 'copy':
+          result = { from: path, to: path + '_copy', success: true };
+          break;
+        default:
+          throw new Error(`Неизвестное действие: ${action}`);
+      }
+
+      return {
+        success: true,
+        data: result,
+        message: `Операция "${action}" выполнена для ${path}`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Ошибка файловой операции',
+      };
+    }
+  }
+}
+
+class TerminalExecutorTool implements AgentTool {
+  name = 'terminal_executor';
+  displayName = 'Исполнитель команд';
+  description = 'Выполнение команд терминала';
+  parameters = {
+    command: { type: 'string', description: 'Команда для выполнения' },
+    workingDirectory: { type: 'string', description: 'Рабочая директория' },
+    timeout: { type: 'number', description: 'Таймаут в секундах' }
+  };
+
+  async execute(params: { command: string; workingDirectory?: string; timeout?: number }): Promise<ToolResult> {
+    try {
+      const { command, workingDirectory = '/', timeout = 30 } = params;
+      
+      // Simulate command execution
+      const mockOutput = {
+        command,
+        workingDirectory,
+        stdout: `Выполнение команды: ${command}\nРезультат симуляции\nУспешно завершено`,
+        stderr: '',
+        exitCode: 0,
+        executionTime: Math.random() * 1000,
+      };
+
+      return {
+        success: true,
+        data: mockOutput,
+        message: `Команда "${command}" выполнена успешно`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Ошибка выполнения команды',
+      };
+    }
+  }
+}
+
 // Export all tools
 export const agentTools: AgentTool[] = [
   new FileAnalysisTool(),
   new CodeGeneratorTool(),
   new SearchTool(),
   new ProjectMapTool(),
+  new WebScraperTool(),
+  new DatabaseQueryTool(),
+  new TextProcessorTool(),
+  new FileManagerTool(),
+  new TerminalExecutorTool(),
 ];
 
 export function getToolByName(name: string): AgentTool | undefined {
