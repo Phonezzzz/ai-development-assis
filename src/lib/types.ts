@@ -9,6 +9,12 @@ export interface ModelOption {
   name: string;
   provider: string;
   description?: string;
+  contextLength?: number;
+  pricing?: {
+    prompt: string;
+    completion: string;
+  };
+  free?: boolean;
 }
 
 export type AgentStatus = 'idle' | 'thinking' | 'active' | 'complete' | 'error';

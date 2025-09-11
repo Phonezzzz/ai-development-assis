@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ModeSelector } from '@/components/ModeSelector';
 import { AgentDisplay } from '@/components/AgentDisplay';
 import { PlanViewer } from '@/components/PlanViewer';
+import { ApiConfigurationWarning } from '@/components/ApiConfigurationWarning';
 import { ChatMode } from '@/components/modes/ChatMode';
 import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
 import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
@@ -185,6 +186,8 @@ function App() {
         {/* Sidebar */}
         <aside className="w-80 border-r bg-card flex flex-col">
           <div className="p-4 space-y-4">
+            <ApiConfigurationWarning />
+            
             <AgentDisplay
               agents={agents}
               currentAgent={currentAgent}

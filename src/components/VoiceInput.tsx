@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { ModelSelector } from '@/components/ModelSelector';
 import { cn } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
 import { useModelSelection } from '@/hooks/use-model-selection';
 import { WorkMode } from '@/lib/types';
-import { Microphone, MicrophoneSlash, PaperPlaneTilt, Brain, Lightning, List } from '@phosphor-icons/react';
+import { Microphone, MicrophoneSlash, Brain, Lightning } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 
 interface VoiceInputProps {
@@ -25,7 +25,7 @@ export function VoiceInput({
   const [inputText, setInputText] = useState('');
   const [workMode, setWorkMode] = useState<WorkMode>(currentMode);
   const { voiceState, startListening, stopListening, isSupported } = useVoiceRecognition();
-  const { availableModels, currentModel, selectModel, isSelecting, setIsSelecting } = useModelSelection();
+  const { currentModel, isConfigured } = useModelSelection();
 
   useEffect(() => {
     if (voiceState.transcript && !voiceState.isProcessing && !voiceState.isListening) {
@@ -67,33 +67,13 @@ export function VoiceInput({
     <div className="space-y-3">
       {/* Model Selection */}
       <div className="flex items-center gap-2">
-        <Select 
-          value={currentModel.id} 
-          onValueChange={selectModel}
-          open={isSelecting}
-          onOpenChange={setIsSelecting}
-        >
-          <SelectTrigger className="w-48">
-            <div className="flex items-center gap-2">
-              <List size={16} />
-              <SelectValue />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            {availableModels.map((model) => (
-              <SelectItem key={model.id} value={model.id}>
-                <div className="flex flex-col items-start">
-                  <div className="font-medium">{model.name}</div>
-                  <div className="text-xs text-muted-foreground">{model.provider}</div>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ModelSelector />
         
-        <Badge variant="outline" className="text-xs">
-          {currentModel.provider}
-        </Badge>
+        {!isConfigured && (
+          <Badge variant="destructive" className="text-xs">
+            Демо режим
+          </Badge>
+        )}
       </div>
 
       {/* Main Input */}
