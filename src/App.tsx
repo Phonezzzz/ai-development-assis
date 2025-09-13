@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Toaster } from '@/components/ui/sonner';
+import { Button } from '@/components/ui/button';
 import { ModeSelector } from '@/components/ModeSelector';
 import { ChatHistory } from '@/components/ChatHistory';
 import { PlanViewer } from '@/components/PlanViewer';
-import { ApiConfigurationWarning } from '@/components/ApiConfigurationWarning';
+import { SettingsDialog } from '@/components/SettingsDialog';
 import { SmartContextPanel } from '@/components/SmartContextPanel';
 import { ChatMode } from '@/components/modes/ChatMode';
 import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
@@ -15,6 +16,7 @@ import { useSmartContext } from '@/hooks/use-smart-context';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
 import { vectorService } from '@/lib/services/vector';
 import { llmService } from '@/lib/services/llm';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 function App() {
@@ -25,6 +27,7 @@ function App() {
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [currentQuery, setCurrentQuery] = useState('');
   const [currentWorkMode, setCurrentWorkMode] = useState<WorkMode>('act');
+  const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>('sidebar-collapsed', false);
   
   // Memoize agent system and voice recognition to prevent unnecessary re-renders
   const agentSystem = useAgentSystem();
@@ -299,48 +302,69 @@ function App() {
             </div>
           </div>
           
-          <ModeSelector
-            currentMode={currentMode || 'chat'}
-            onModeChange={setCurrentMode}
-          />
+          <div className="flex items-center gap-2">
+            <SettingsDialog />
+            <ModeSelector
+              currentMode={currentMode || 'chat'}
+              onModeChange={setCurrentMode}
+            />
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="flex-1 flex min-h-0">
         {/* Sidebar */}
-        <aside className="w-80 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10 flex-shrink-0">
+        <aside className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10 flex-shrink-0 overflow-hidden`}>
           <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-            <ApiConfigurationWarning />
-            
-            <ChatHistory
-              messages={messages || []}
-              onClearHistory={handleClearHistory}
-            />
-            
-            {currentPlan && (
-              <PlanViewer
-                plan={currentPlan}
-                onConfirmPlan={handleConfirmPlan}
-                onExecutePlan={() => {}}
-                isExecuting={isWorking}
-              />
-            )}
+            {!sidebarCollapsed && (
+              <>
+                <ChatHistory
+                  messages={messages || []}
+                  onClearHistory={handleClearHistory}
+                />
+                
+                {currentPlan && (
+                  <PlanViewer
+                    plan={currentPlan}
+                    onConfirmPlan={handleConfirmPlan}
+                    onExecutePlan={() => {}}
+                    isExecuting={isWorking}
+                  />
+                )}
 
-            {/* Умный контекст */}
-            {currentQuery && (
-              <SmartContextPanel
-                query={currentQuery}
-                mode={currentWorkMode}
-                onSuggestionClick={(suggestion) => {
-                  // TODO: Добавить обработку клика по предложению
-                  console.log('Suggestion clicked:', suggestion);
-                }}
-                className="mt-4"
-              />
+                {/* Умный контекст */}
+                {currentQuery && (
+                  <SmartContextPanel
+                    query={currentQuery}
+                    mode={currentWorkMode}
+                    onSuggestionClick={(suggestion) => {
+                      // TODO: Добавить обработку клика по предложению
+                      console.log('Suggestion clicked:', suggestion);
+                    }}
+                    className="mt-4"
+                  />
+                )}
+              </>
             )}
           </div>
         </aside>
+
+        {/* Sidebar Toggle Button */}
+        <div className="flex flex-col justify-center relative z-10">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="rounded-l-none border-l-0 h-12 w-6 p-0 border-border hover:border-accent"
+          >
+            {sidebarCollapsed ? (
+              <CaretRight size={16} />
+            ) : (
+              <CaretLeft size={16} />
+            )}
+          </Button>
+        </div>
 
         {/* Main View */}
         <main className="flex-1 min-w-0 bg-transparent relative z-10 flex flex-col">

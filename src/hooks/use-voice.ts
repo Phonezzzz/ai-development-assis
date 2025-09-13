@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useKV } from '@github/spark/hooks';
 import { VoiceState } from '@/lib/types';
 import { ttsService } from '@/lib/services/tts';
 
@@ -10,13 +11,14 @@ export function useVoiceRecognition() {
     confidence: 0,
   });
 
+  const [selectedVoice] = useKV<string>('selected-voice', '');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthesisRef = useRef<SpeechSynthesis | null>(null);
 
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
         
         if (SpeechRecognition) {
           const recognitionInstance = new SpeechRecognition();
@@ -113,7 +115,7 @@ export function useVoiceRecognition() {
       if (ttsService.isAvailable()) {
         await ttsService.speak(text);
       } else {
-        // Fallback to browser TTS
+        // Fallback to browser TTS with selected voice
         const synthesis = synthesisRef.current;
         if (!synthesis) {
           console.warn('Speech synthesis not available');
@@ -126,6 +128,15 @@ export function useVoiceRecognition() {
         utterance.pitch = 1;
         utterance.volume = 0.8;
         utterance.lang = 'ru-RU';
+        
+        // Используем выбранный голос, если он задан
+        if (selectedVoice) {
+          const voices = synthesis.getVoices();
+          const voice = voices.find(v => v.voiceURI === selectedVoice);
+          if (voice) {
+            utterance.voice = voice;
+          }
+        }
         
         synthesis.speak(utterance);
       }
@@ -140,7 +151,7 @@ export function useVoiceRecognition() {
         synthesis.speak(utterance);
       }
     }
-  }, []);
+  }, [selectedVoice]);
 
   const isSupported = Boolean(recognitionRef.current && synthesisRef.current);
 
