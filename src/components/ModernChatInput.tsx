@@ -17,7 +17,7 @@ import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
-import { useVoiceRecognition } from '@/hooks/use-voice';
+import { useVoiceSTT } from '@/hooks/use-voice-stt';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -65,8 +65,8 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     voiceState, 
     startListening, 
     stopListening, 
-    isSupported: isVoiceSupported 
-  } = useVoiceRecognition();
+    isSupported 
+  } = useVoiceSTT();
 
   // Обновляем input при получении транскрипта
   useEffect(() => {
@@ -98,7 +98,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
   }, [handleSubmit]);
 
   const toggleVoiceRecognition = useCallback(async () => {
-    if (!isVoiceSupported) {
+    if (!isSupported) {
       console.warn('Speech recognition not supported');
       return;
     }
@@ -108,7 +108,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     } else {
       await startListening();
     }
-  }, [voiceState.isListening, isVoiceSupported, startListening, stopListening]);
+  }, [voiceState.isListening, isSupported, startListening, stopListening]);
 
   const handleFileUpload = useCallback(() => {
     const input = document.createElement('input');

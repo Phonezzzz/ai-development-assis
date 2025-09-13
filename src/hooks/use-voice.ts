@@ -12,7 +12,7 @@ export function useVoiceRecognition() {
   });
 
   const [selectedVoice] = useKV<string>('selected-voice', 'EXAVITQu4vr4xnSDxMaL');
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     try {
@@ -26,7 +26,7 @@ export function useVoiceRecognition() {
           const recognitionInstance = new SpeechRecognition();
           recognitionInstance.continuous = false;
           recognitionInstance.interimResults = true;
-          recognitionInstance.lang = 'ru-RU'; // Changed to Russian
+          recognitionInstance.lang = 'ru-RU';
           
           console.log('STT: Настройки применены:', {
             continuous: recognitionInstance.continuous,
@@ -52,44 +52,61 @@ export function useVoiceRecognition() {
       return;
     }
 
+    // Если уже слушаем - сначала останавливаем
+    if (voiceState.isListening) {
+      recognition.stop();
+      return;
+    }
+
     try {
       // Проверяем разрешение на микрофон
       console.log('STT: Запрашиваем разрешение на микрофон...');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Останавливаем поток, он нам нужен только для проверки разрешения
+      stream.getTracks().forEach(track => track.stop());
       
       console.log('STT: Разрешение на микрофон получено, запускаем STT...');
 
-      setVoiceState((prev) => ({
-        ...prev,
-        isListening: true,
-        isProcessing: false,
-        transcript: '',
-      }));
-
-      recognition.addEventListener('start', () => {
+      // Устанавливаем обработчики
+      recognition.onstart = () => {
         console.log('STT: Распознавание речи запущено');
-      });
+        setVoiceState((prev) => ({
+          ...prev,
+          isListening: true,
+          isProcessing: true,
+          transcript: '',
+        }));
+      };
 
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         try {
           console.log('STT: Получен результат', event);
-          const result = event.results[event.results.length - 1];
-          const transcript = result.transcript;
-          const confidence = result.confidence || 0;
-
-          console.log('STT: Транскрипт:', transcript, 'Уверенность:', confidence);
+          
+          let finalTranscript = '';
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex || 0; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) {
+              finalTranscript += result[0].transcript;
+            } else {
+              interimTranscript += result[0].transcript;
+            }
+          }
+          
+          const transcript = finalTranscript || interimTranscript;
+          console.log('STT: Транскрипт:', transcript);
 
           setVoiceState((prev) => ({
             ...prev,
             transcript,
-            confidence,
-            isProcessing: !result.isFinal,
+            confidence: event.results[event.results.length - 1]?.[0]?.confidence || 0,
+            isProcessing: !finalTranscript,
           }));
 
-          // Если результат финальный, автоматически останавливаем запись
-          if (result.isFinal) {
-            console.log('STT: Финальный результат получен');
+          // Если есть финальный результат, останавливаем
+          if (finalTranscript) {
+            console.log('STT: Финальный результат получен:', finalTranscript);
+            setTimeout(() => recognition.stop(), 100);
           }
         } catch (error) {
           console.error('STT: Ошибка обработки результата:', error);
@@ -98,6 +115,13 @@ export function useVoiceRecognition() {
 
       recognition.onerror = (event) => {
         console.error('STT: Ошибка распознавания:', event.error, event);
+        
+        setVoiceState((prev) => ({
+          ...prev,
+          isListening: false,
+          isProcessing: false,
+        }));
+
         let errorMessage = 'Ошибка распознавания речи: ';
         
         switch (event.error) {
@@ -105,25 +129,21 @@ export function useVoiceRecognition() {
             errorMessage += 'Разрешение на микрофон отклонено';
             break;
           case 'no-speech':
-            errorMessage += 'Речь не обнаружена';
-            break;
+            errorMessage += 'Речь не обнаружена. Попробуйте еще раз.';
+            return; // Не показываем алерт для no-speech
           case 'audio-capture':
             errorMessage += 'Ошибка захвата аудио';
             break;
           case 'network':
             errorMessage += 'Сетевая ошибка';
             break;
+          case 'aborted':
+            return; // Не показываем алерт для прерванного распознавания
           default:
             errorMessage += event.error;
         }
         
         alert(errorMessage);
-        
-        setVoiceState((prev) => ({
-          ...prev,
-          isListening: false,
-          isProcessing: false,
-        }));
       };
 
       recognition.onend = () => {
@@ -137,8 +157,15 @@ export function useVoiceRecognition() {
 
       console.log('STT: Запускаем распознавание...');
       recognition.start();
+      
     } catch (error) {
       console.error('STT: Не удалось запустить распознавание речи:', error);
+      
+      setVoiceState((prev) => ({
+        ...prev,
+        isListening: false,
+        isProcessing: false,
+      }));
       
       let errorMessage = 'Ошибка доступа к микрофону: ';
       if (error.name === 'NotAllowedError') {
@@ -150,14 +177,8 @@ export function useVoiceRecognition() {
       }
       
       alert(errorMessage);
-      
-      setVoiceState((prev) => ({
-        ...prev,
-        isListening: false,
-        isProcessing: false,
-      }));
     }
-  }, []);
+  }, [voiceState.isListening]);
 
   const stopListening = useCallback(() => {
     const recognition = recognitionRef.current;
