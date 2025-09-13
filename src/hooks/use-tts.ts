@@ -8,9 +8,17 @@ export interface TTSState {
   error: string | null;
 }
 
-// ElevenLabs voices - проверенные реальные ID голосов с поддержкой мультиязычности
+// ElevenLabs voices - реальные ID голосов с поддержкой мультиязычности
 export const ELEVENLABS_VOICES = [
-  // Премиум голоса с мультиязычной поддержкой
+  // Ваши предоставленные голоса
+  { id: '21masSU9f4isSNm7Egqd', name: 'Голос 1 (Мультиязычный)' },
+  { id: 'Ga0Zjw9ZBbevb3wIda0V', name: 'Голос 2 (Мультиязычный)' },
+  { id: '0BcDz9UPwL3MpsnTeUlO', name: 'Голос 3 (Мультиязычный)' },
+  { id: '2vlCRzCr5OBHeAZiklN6', name: 'Голос 4 (Мультиязычный)' },
+  { id: '9J5k2YY8VppC3SZKZslk', name: 'Голос 5 (Мультиязычный)' },
+  { id: 'aG9q1I1wTbfHh5sbpJnp', name: 'Голос 6 (Мультиязычный)' },
+  
+  // Стандартные премиум голоса ElevenLabs
   { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George (Мужской, мультиязычный)' },
   { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella (Женский, мультиязычный)' },
   { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh (Мужской, мультиязычный)' },
@@ -41,7 +49,7 @@ export function useTTS() {
     error: null,
   });
 
-  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb'); // George по умолчанию
+  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', '21masSU9f4isSNm7Egqd'); // Ваш первый голос по умолчанию
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const speak = useCallback(async (text: string) => {

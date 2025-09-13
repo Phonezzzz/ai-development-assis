@@ -18,7 +18,7 @@ import { useTTS, ELEVENLABS_VOICES } from '@/hooks/use-tts';
 
 export function SettingsDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb');
+  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', '21masSU9f4isSNm7Egqd');
   const [systemPrompt, setSystemPrompt] = useKV<string>('system-prompt', 
     'Вы - умный помощник, который отвечает на русском языке. Будьте полезными, точными и дружелюбными.'
   );
