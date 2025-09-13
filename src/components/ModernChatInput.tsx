@@ -8,6 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AgentSelector } from '@/components/AgentSelector';
+import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { cn } from '@/lib/utils';
@@ -54,16 +56,12 @@ const AGENT_TOOLS = [
   { id: 'testing', name: 'Тестирование', icon: '🧪', description: 'Создание тестов' },
 ];
 
-const AGENT_MODES = [
-  { id: 'plan', name: 'Режим планирования', icon: Brain, description: 'Создание детального плана' },
-  { id: 'act', name: 'Режим действия', icon: Robot, description: 'Выполнение задач' },
-];
-
 export function ModernChatInput({ onSubmit, placeholder = "Спросите что угодно или упомяните пространство", disabled }: ModernChatInputProps) {
   const [input, setInput] = useState('');
   const [selectedModel, setSelectedModel] = useKV<string>('selected-model', 'gpt-4');
   const [workMode, setWorkMode] = useKV<WorkMode>('work-mode', 'plan');
   const [selectedTools, setSelectedTools] = useKV<string[]>('selected-tools', []);
+  const [selectedAgent, setSelectedAgent] = useKV<string>('selected-agent', 'architector');
   const [isListening, setIsListening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -186,37 +184,17 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Work Mode dropdown */}
+            <WorkModeSelector
+              selectedMode={workMode}
+              onModeSelect={setWorkMode}
+            />
+
             {/* Agents dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted"
-                  title={`Агент: ${AGENT_MODES.find(m => m.id === workMode)?.name || 'Не выбран'}`}
-                >
-                  <Robot size={14} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                {AGENT_MODES.map((mode) => (
-                  <DropdownMenuItem
-                    key={mode.id}
-                    onClick={() => setWorkMode(mode.id as WorkMode)}
-                    className={cn(
-                      "flex items-start gap-3 p-3",
-                      workMode === mode.id && "bg-accent"
-                    )}
-                  >
-                    <mode.icon size={16} />
-                    <div className="flex-1">
-                      <div className="font-medium">{mode.name}</div>
-                      <div className="text-xs text-muted-foreground">{mode.description}</div>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <AgentSelector
+              selectedAgent={selectedAgent}
+              onAgentSelect={setSelectedAgent}
+            />
           </div>
 
           <Input
@@ -226,7 +204,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
-            className="pl-32 pr-28 py-3 text-sm bg-background border-input focus:border-accent transition-colors"
+            className="pl-40 pr-28 py-3 text-sm bg-background border-input focus:border-accent transition-colors"
           />
 
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
@@ -276,7 +254,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         </div>
 
         {/* Status indicators */}
-        {(isListening || (selectedTools && selectedTools.length > 0)) && (
+        {(isListening || (selectedTools && selectedTools.length > 0) || selectedAgent) && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {isListening && (
               <div className="flex items-center gap-1">
@@ -294,6 +272,12 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               <div className="flex items-center gap-1">
                 <Wrench size={12} />
                 <span>{selectedTools.length} инструментов активно</span>
+              </div>
+            )}
+            {selectedAgent && (
+              <div className="flex items-center gap-1">
+                <Robot size={12} />
+                <span>Агент выбран</span>
               </div>
             )}
           </div>
