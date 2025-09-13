@@ -116,11 +116,10 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 px-2 gap-1 text-xs bg-muted/50 hover:bg-muted"
+                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted"
+                  title={`Модель: ${selectedModelData?.name || 'Не выбрана'}`}
                 >
-                  <Brain size={12} />
-                  <span className="max-w-16 truncate">{selectedModelData?.name || 'Model'}</span>
-                  <CaretDown size={10} />
+                  <Brain size={14} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
@@ -155,11 +154,10 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 px-2 gap-1 text-xs bg-muted/50 hover:bg-muted"
+                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted"
+                  title={`Инструменты: ${selectedTools?.length || 0} активно`}
                 >
-                  <Wrench size={12} />
-                  <span>Инструменты</span>
-                  <CaretDown size={10} />
+                  <Wrench size={14} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
@@ -194,11 +192,10 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 px-2 gap-1 text-xs bg-muted/50 hover:bg-muted"
+                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted"
+                  title={`Агент: ${AGENT_MODES.find(m => m.id === workMode)?.name || 'Не выбран'}`}
                 >
-                  <Robot size={12} />
-                  <span>{AGENT_MODES.find(m => m.id === workMode)?.name.split(' ')[1] || 'Режим'}</span>
-                  <CaretDown size={10} />
+                  <Robot size={14} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
@@ -229,7 +226,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
-            className="pl-44 pr-28 py-3 text-sm bg-background border-input focus:border-accent transition-colors"
+            className="pl-32 pr-28 py-3 text-sm bg-background border-input focus:border-accent transition-colors"
           />
 
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
