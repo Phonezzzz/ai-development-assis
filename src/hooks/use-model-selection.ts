@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { ModelOption } from '@/lib/types';
-import { openRouterService, OpenRouterModel } from '@/lib/openrouter';
+import { openRouterService, Model } from '@/lib/services/openrouter';
 
 export function useModelSelection() {
   const [selectedModel, setSelectedModel] = useKV<string>('selected-model', 'meta-llama/llama-3.1-8b-instruct:free');
@@ -13,14 +13,14 @@ export function useModelSelection() {
     setIsLoading(true);
     try {
       const openRouterModels = await openRouterService.getModels();
-      const modelOptions: ModelOption[] = openRouterModels.map((model: OpenRouterModel) => ({
+      const modelOptions: ModelOption[] = openRouterModels.map((model: Model) => ({
         id: model.id,
         name: model.name,
-        provider: getProviderFromId(model.id),
-        description: `${formatContextLength(model.context_length)} • $${model.pricing.prompt}/$${model.pricing.completion}`,
-        contextLength: model.context_length,
+        provider: model.provider,
+        description: `${formatContextLength(model.contextLength)} • $${model.pricing.prompt}/$${model.pricing.completion}`,
+        contextLength: model.contextLength,
         pricing: model.pricing,
-        free: model.pricing.prompt === '0' && model.pricing.completion === '0'
+        free: model.pricing.prompt === 0 && model.pricing.completion === 0
       }));
       
       // Sort models: free first, then by provider
@@ -73,6 +73,7 @@ export function useModelSelection() {
   }, [availableModels]);
 
   const getCurrentModel = useCallback(() => {
+    if (!selectedModel || !availableModels.length) return undefined;
     return getModelById(selectedModel) || availableModels[0];
   }, [selectedModel, getModelById, availableModels]);
 

@@ -11,8 +11,8 @@ export interface ModelOption {
   description?: string;
   contextLength?: number;
   pricing?: {
-    prompt: string;
-    completion: string;
+    prompt: number;
+    completion: number;
   };
   free?: boolean;
 }

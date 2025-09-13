@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useModelSelection } from '@/hooks/use-model-selection';
-import { ChevronDown, Sparkles, AlertCircle, RefreshCw } from '@phosphor-icons/react';
+import { CaretDown, Sparkle, Warning, ArrowClockwise } from '@phosphor-icons/react';
 
 export function ModelSelector() {
   const {
@@ -46,7 +46,7 @@ export function ModelSelector() {
     return (
       <div className="flex items-center gap-2">
         <Skeleton className="h-8 w-32" />
-        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        <CaretDown className="h-4 w-4 text-muted-foreground" />
       </div>
     );
   }
@@ -59,7 +59,7 @@ export function ModelSelector() {
           className="flex items-center gap-2 min-w-48 justify-between"
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
+            <Sparkle className="h-4 w-4" />
             <span className="truncate">
               {currentModel?.name || 'Выберите модель'}
             </span>
@@ -69,7 +69,7 @@ export function ModelSelector() {
               </Badge>
             )}
           </div>
-          <ChevronDown className="h-4 w-4" />
+          <CaretDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
 
@@ -83,7 +83,7 @@ export function ModelSelector() {
             disabled={isRefreshing}
             className="h-6 w-6 p-0"
           >
-            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <ArrowClockwise className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
@@ -91,7 +91,7 @@ export function ModelSelector() {
           <>
             <div className="px-2 py-1">
               <div className="flex items-center gap-2 text-sm text-yellow-400">
-                <AlertCircle className="h-4 w-4" />
+                <Warning className="h-4 w-4" />
                 <span>API не настроен - демо режим</span>
               </div>
             </div>
