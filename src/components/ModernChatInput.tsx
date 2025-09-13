@@ -74,10 +74,10 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
   // Используем Whisper STT как альтернативу
   const whisperSTT = useWhisperSTT();
 
-  // Определяем какой метод STT использовать
-  const useWhisperFallback = !isSupported && whisperSTT.isSupported;
+  // Определяем какой метод STT использовать - только Web Speech API пока что
+  const useWhisperFallback = false; // Отключаем Whisper пока не будет добавлен OpenAI API ключ
   const currentSTTState = useWhisperFallback ? whisperSTT.state : voiceState;
-  const isSTTAvailable = isSupported || whisperSTT.isSupported;
+  const isSTTAvailable = isSupported; // Только Web Speech API
 
   // Обновляем input при получении транскрипта
   useEffect(() => {
@@ -114,7 +114,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     
     if (!isSTTAvailable) {
       console.warn('Speech recognition not supported');
-      alert('Распознавание речи не поддерживается в этом браузере и нет API ключей для Whisper.');
+      alert(`Распознавание речи недоступно в этом браузере.\n\nПоддерживаемые браузеры:\n• Chrome\n• Edge\n• Safari\n\nТребуется HTTPS подключение.\n\nWhisper API (OpenAI) пока не настроен.`);
       return;
     }
 
@@ -345,9 +345,9 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               title={
                 (currentSTTState as any).isListening || (currentSTTState as any).isRecording
                   ? "Остановить запись" 
-                  : useWhisperFallback
-                    ? "Голосовой ввод (Whisper)"
-                    : "Голосовой ввод (Web Speech)"
+                  : isSTTAvailable
+                    ? "Голосовой ввод (Web Speech API)"
+                    : "Голосовой ввод недоступен"
               }
               disabled={!isSTTAvailable}
             >

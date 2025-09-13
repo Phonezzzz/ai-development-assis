@@ -21,12 +21,14 @@ export function useWhisperSTT() {
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const isSupported = () => {
-    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-  };
+  const isSupportedValue = !!(
+    navigator.mediaDevices && 
+    typeof navigator.mediaDevices.getUserMedia === 'function' && 
+    typeof MediaRecorder !== 'undefined'
+  );
 
   const startRecording = useCallback(async () => {
-    if (!isSupported()) {
+    if (!isSupportedValue) {
       toast.error('Запись аудио не поддерживается в этом браузере');
       return;
     }
@@ -169,59 +171,18 @@ export function useWhisperSTT() {
       hasOpenAI: !!openaiKey && openaiKey !== 'your_openai_api_key_here'
     });
 
-    if (openrouterKey && openrouterKey !== 'your_openrouter_api_key_here') {
-      return await transcribeWithOpenRouter(audioBlob, openrouterKey);
-    } else if (openaiKey && openaiKey !== 'your_openai_api_key_here') {
+    // Только OpenAI поддерживает Whisper API для транскрипции
+    if (openaiKey && openaiKey !== 'your_openai_api_key_here') {
       return await transcribeWithOpenAI(audioBlob, openaiKey);
     } else {
-      throw new Error('Не найден API ключ для транскрипции. Добавьте VITE_OPENROUTER_API_KEY или VITE_OPENAI_API_KEY в .env файл');
+      throw new Error('Для транскрипции аудио требуется OpenAI API ключ. Добавьте VITE_OPENAI_API_KEY в .env файл.\n\nOpenRouter не поддерживает транскрипцию аудио.');
     }
   };
 
   const transcribeWithOpenRouter = async (audioBlob: Blob, apiKey: string): Promise<string> => {
-    console.log('Using OpenRouter for transcription');
-    
-    const formData = new FormData();
-    
-    // Конвертируем в формат, который лучше поддерживается
-    let audioFile = audioBlob;
-    if (audioBlob.type === 'audio/webm') {
-      // Создаем новый Blob с типом audio/webm;codecs=opus
-      audioFile = new Blob([audioBlob], { type: 'audio/webm;codecs=opus' });
-    }
-    
-    formData.append('file', audioFile, 'recording.webm');
-    formData.append('model', 'openai/whisper-1');
-    formData.append('language', 'ru');
-    formData.append('response_format', 'json');
-
-    console.log('Sending request to OpenRouter...', {
-      fileSize: audioFile.size,
-      fileType: audioFile.type
-    });
-
-    const response = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': window.location.href,
-        'X-Title': 'AI Agent Workspace'
-      },
-      body: formData,
-    });
-
-    console.log('OpenRouter response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenRouter API error:', errorText);
-      throw new Error(`OpenRouter API error ${response.status}: ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('OpenRouter transcription result:', result);
-    
-    return result.text || '';
+    // OpenRouter не поддерживает audio transcription API
+    // Возвращаем ошибку с рекомендацией использовать OpenAI
+    throw new Error('OpenRouter не поддерживает транскрипцию аудио. Используйте OpenAI API ключ для Whisper.');
   };
 
   const transcribeWithOpenAI = async (audioBlob: Blob, apiKey: string): Promise<string> => {
@@ -250,6 +211,6 @@ export function useWhisperSTT() {
     state,
     startRecording,
     stopRecording,
-    isSupported: isSupported(),
+    isSupported: isSupportedValue,
   };
 }
