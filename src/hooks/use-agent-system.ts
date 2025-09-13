@@ -179,7 +179,7 @@ export function useAgentSystem() {
     
     const confirmedPlan = { ...currentPlan, status: 'confirmed' as const };
     setCurrentPlan(confirmedPlan);
-    setPlans((prev) => [...prev, confirmedPlan]);
+    setPlans((prev) => [...(prev || []), confirmedPlan]);
   }, [currentPlan, setCurrentPlan, setPlans]);
 
   const executePlan = useCallback(async (): Promise<Message[]> => {

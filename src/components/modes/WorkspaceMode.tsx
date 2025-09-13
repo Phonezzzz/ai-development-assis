@@ -38,6 +38,11 @@ import {
   Sparkle
 } from '@phosphor-icons/react';
 
+declare const spark: {
+  llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => string;
+  llm: (prompt: string, modelName?: string, jsonMode?: boolean) => Promise<string>;
+};
+
 interface TerminalSession {
   id: string;
   commands: Array<{
@@ -78,6 +83,7 @@ export function WorkspaceMode({ onSendMessage }: WorkspaceModeProps) {
   const [editingContent, setEditingContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('explorer');
+  const [workMode, setWorkMode] = useState<WorkMode>('act');
   
   // Terminal state
   const [terminalSession, setTerminalSession] = useState<TerminalSession>({
@@ -226,10 +232,10 @@ export function WorkspaceMode({ onSendMessage }: WorkspaceModeProps) {
     try {
       // Get project context for agent
       const contextPrompt = selectedProject 
-        ? `Контекст проекта: ${selectedProject.name}\nФайлы: ${selectedProject.files.map(f => f.name).join(', ')}\nЯзыки: ${selectedProject.stats.languages.join(', ')}`
+        ? `Контекст проекта: ${selectedProject.name}\nФайлы: ${selectedProject.files.map(f => f.name).join(', ')}\nЯзыки: ${Object.keys(selectedProject.stats.languages).join(', ')}`
         : 'Нет активного проекта';
 
-      const prompt = window.spark.llmPrompt`Ты - ИИ помощник в рабочем пространстве разработки. 
+      const prompt = spark.llmPrompt`Ты - ИИ помощник в рабочем пространстве разработки. 
 
 ${contextPrompt}
 
@@ -432,14 +438,14 @@ ${contextPrompt}
                           <h4 className="font-medium truncate">{project.name}</h4>
                         </div>
                         <div className="flex flex-wrap gap-1 mb-2">
-                          {project.stats.languages.slice(0, 3).map(lang => (
+                          {Object.keys(project.stats.languages).slice(0, 3).map(lang => (
                             <Badge key={lang} variant="secondary" className="text-xs">
                               {lang}
                             </Badge>
                           ))}
-                          {project.stats.languages.length > 3 && (
+                          {Object.keys(project.stats.languages).length > 3 && (
                             <Badge variant="secondary" className="text-xs">
-                              +{(project.stats.languages.length - 3).toString()}
+                              +{Object.keys(project.stats.languages).length - 3}
                             </Badge>
                           )}
                         </div>
@@ -694,6 +700,8 @@ ${contextPrompt}
           }}
           placeholder="Работайте с проектом, задавайте команды..."
           disabled={isAgentWorking}
+          workMode={workMode}
+          setWorkMode={setWorkMode}
         />
       </div>
     </div>

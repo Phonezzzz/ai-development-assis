@@ -1,5 +1,18 @@
 import { vectorService, VectorDocument } from './vector';
 
+// Global spark API declaration
+declare const spark: {
+  llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => string;
+  llm: (prompt: string, modelName?: string, jsonMode?: boolean) => Promise<string>;
+  user: () => Promise<any>;
+  kv: {
+    keys: () => Promise<string[]>;
+    get: <T>(key: string) => Promise<T | undefined>;
+    set: <T>(key: string, value: T) => Promise<void>;
+    delete: (key: string) => Promise<void>;
+  };
+};
+
 export interface ToolResult {
   success: boolean;
   data?: any;
