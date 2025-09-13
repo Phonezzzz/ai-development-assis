@@ -99,7 +99,7 @@ function App() {
           'planner'
         );
 
-        setMessages((prev) => [...prev, plannerResponse]);
+        setMessages((prev) => [...(prev || []), plannerResponse]);
         setAwaitingConfirmation(true);
         
         // Store planner response in vector database
@@ -128,7 +128,8 @@ function App() {
         if (awaitingConfirmation && currentPlan) {
           if (text.toLowerCase().includes('да') || text.toLowerCase().includes('yes')) {
             handleConfirmPlan();
-            await handleExecutePlan();
+            const agentMessages = await executePlan();
+            setMessages((prev) => [...(prev || []), ...agentMessages]);
             setAwaitingConfirmation(false);
           } else {
             const response = createMessage(
@@ -136,7 +137,7 @@ function App() {
               'agent',
               'planner'
             );
-            setMessages((prev) => [...prev, response]);
+            setMessages((prev) => [...(prev || []), response]);
             if (isVoice) speak(response.content);
             setAwaitingConfirmation(false);
           }
@@ -146,7 +147,7 @@ function App() {
           confirmPlan();
           
           const agentMessages = await executePlan();
-          setMessages((prev) => [...prev, ...agentMessages]);
+          setMessages((prev) => [...(prev || []), ...agentMessages]);
           
           agentMessages.forEach((message, index) => {
             setTimeout(() => {
@@ -239,7 +240,7 @@ function App() {
   };
 
   return (
-    <div className="h-screen w-screen text-foreground flex flex-col relative bg-transparent overflow-hidden">
+    <div className="h-screen w-screen text-foreground flex flex-col relative bg-transparent">
       {/* Header */}
       <header className="border-b bg-card/80 backdrop-blur-sm p-4 relative z-10 flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -261,7 +262,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
+      <div className="flex-1 flex min-h-0">
         {/* Sidebar */}
         <aside className="w-80 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10 flex-shrink-0">
           <div className="p-4 space-y-4 flex-1 overflow-y-auto">
@@ -297,7 +298,7 @@ function App() {
         </aside>
 
         {/* Main View */}
-        <main className="flex-1 min-w-0 bg-transparent relative z-10 overflow-hidden">
+        <main className="flex-1 min-w-0 bg-transparent relative z-10 flex flex-col">
           {renderMode()}
         </main>
       </div>
