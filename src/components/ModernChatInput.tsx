@@ -66,6 +66,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     startListening, 
     stopListening, 
     isSupported,
+    supportDetails,
   } = useVoiceRecognition();
 
   // Обновляем input при получении транскрипта
@@ -388,14 +389,24 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-muted-foreground space-y-1">
             <div>
-              STT поддержка: {isSupported ? '✅' : '❌'} |
-              Состояние: {voiceState.isListening ? 'Слушаю' : voiceState.isProcessing ? 'Обработка' : 'Ожидание'} |
+              STT поддержка: {isSupported ? '✅' : '❌'} | 
+              Web Speech API: {supportDetails?.hasSpeechRecognition ? '✅' : '❌'} | 
+              MediaDevices: {supportDetails?.hasMediaDevices ? '✅' : '❌'} | 
+              getUserMedia: {supportDetails?.hasGetUserMedia ? '✅' : '❌'} | 
+              Состояние: {voiceState.isListening ? 'Слушаю' : voiceState.isProcessing ? 'Обработка' : 'Ожидание'} | 
               Кнопка: {!isSupported ? 'Заблокирована' : 'Активна'}
             </div>
             <div>
               Транскрипт: "{voiceState.transcript}" |
               Уверенность: {(voiceState.confidence * 100).toFixed(1)}%
             </div>
+            {supportDetails && (
+              <div className="text-xs">
+                Браузер: {supportDetails.userAgent.slice(0, 50)}... | 
+                Протокол: {supportDetails.protocol} | 
+                Безопасный контекст: {supportDetails.isSecureContext ? 'Да' : 'Нет'}
+              </div>
+            )}
           </div>
         )}
       </form>
