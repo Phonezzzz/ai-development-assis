@@ -8,29 +8,29 @@ export interface TTSState {
   error: string | null;
 }
 
-// ElevenLabs voices available - including Russian/multilingual voices
+// ElevenLabs voices - проверенные реальные ID голосов с поддержкой мультиязычности
 export const ELEVENLABS_VOICES = [
-  // English voices optimized for multilingual
-  { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'Georgiy (Мужской, русский/английский)' },
-  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Katya (Женский, русский/английский)' },
-  { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Ivan (Мужской, русский/английский)' },
-  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Alina (Женский, русский/английский)' },
-  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Dmitriy (Мужской, русский/английский)' },
-  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Anastasiya (Женский, русский/английский)' },
-  { id: 'VR6AewLTigWG4xSOukaG', name: 'Aleksandr (Мужской, русский/английский)' },
-  { id: 'piTKgcLEGmPE4e6mEKli', name: 'Mariya (Женский, русский/английский)' },
-  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Pavel (Мужской, русский/английский)' },
-  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Yelena (Женский, русский/английский)' },
-  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Mikhail (Мужской, русский/английский)' },
-  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Olga (Женский, русский/английский)' },
-  { id: 'ErXwobaYiN019PkySvjV', name: 'Sergey (Мужской, русский/английский)' },
-  { id: 'pqHfZKP75CvOlQylNhV4', name: 'Tatyana (Женский, русский/английский)' },
-  { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Andrey (Мужской, русский/английский)' },
-  { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Svetlana (Женский, русский/английский)' },
-  { id: 'CYw3kZ02Hs0563khs1Fj', name: 'Viktor (Мужской, русский/английский)' },
-  { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Irina (Женский, русский/английский)' },
-  { id: 'g5CIjZEefAph4nQFvHAz', name: 'Roman (Мужской, русский/английский)' },
-  { id: 'oWAxZDx7w5VEj9dCyTzz', name: 'Nadezhda (Женский, русский/английский)' },
+  // Премиум голоса с мультиязычной поддержкой
+  { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George (Мужской, мультиязычный)' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella (Женский, мультиязычный)' },
+  { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh (Мужской, мультиязычный)' },
+  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel (Женский, мультиязычный)' },
+  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam (Мужской, мультиязычный)' },
+  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte (Женский, мультиязычный)' },
+  { id: 'VR6AewLTigWG4xSOukaG', name: 'Josh V2 (Мужской, мультиязычный)' },
+  { id: 'piTKgcLEGmPE4e6mEKli', name: 'Nicole (Женский, мультиязычный)' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel (Мужской, британский)' },
+  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi (Женский, американский)' },
+  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Fin (Мужской, ирландский)' },
+  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli (Женский, американский)' },
+  { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni (Мужской, американский)' },
+  { id: 'pqHfZKP75CvOlQylNhV4', name: 'Bill (Мужской, американский)' },
+  { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam (Мужской, американский)' },
+  { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Freya (Женский, американский)' },
+  { id: 'CYw3kZ02Hs0563khs1Fj', name: 'Dave (Мужской, британский)' },
+  { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda (Женский, американский)' },
+  { id: 'g5CIjZEefAph4nQFvHAz', name: 'Glinda (Женский, американский)' },
+  { id: 'oWAxZDx7w5VEj9dCyTzz', name: 'Grace (Женский, американский)' },
 ];
 
 export function useTTS() {
@@ -41,7 +41,7 @@ export function useTTS() {
     error: null,
   });
 
-  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb'); // Georgiy по умолчанию
+  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb'); // George по умолчанию
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const speak = useCallback(async (text: string) => {
@@ -64,18 +64,43 @@ export function useTTS() {
 
       const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
       if (!apiKey || apiKey === 'your-elevenlabs-api-key-here') {
-        console.error('ElevenLabs API ключ не найден в переменных окружения');
+        console.log('ElevenLabs API key not found, using browser TTS as fallback');
         
         // Fallback to browser TTS if ElevenLabs is not available
+        console.log('ElevenLabs API key not found, using browser TTS');
         try {
           if ('speechSynthesis' in window) {
+            // Остановить предыдущий TTS если он идёт
+            speechSynthesis.cancel();
+            
+            // Get available voices and find Russian ones
+            const voices = speechSynthesis.getVoices();
+            const russianVoices = voices.filter(voice => 
+              voice.lang.includes('ru') || 
+              voice.name.toLowerCase().includes('russian') ||
+              voice.name.toLowerCase().includes('ru')
+            );
+            
+            console.log('Available Russian voices:', russianVoices.map(v => `${v.name} (${v.lang})`));
+            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ru-RU';
+            
+            // Use Russian voice if available
+            if (russianVoices.length > 0) {
+              utterance.voice = russianVoices[0];
+              utterance.lang = russianVoices[0].lang;
+              console.log('Using Russian voice:', russianVoices[0].name);
+            } else {
+              utterance.lang = 'ru-RU';
+              console.log('No Russian voices found, using default with ru-RU lang');
+            }
+            
             utterance.rate = 0.9;
             utterance.pitch = 1;
             utterance.volume = 0.8;
             
             utterance.onstart = () => {
+              console.log('Browser TTS started');
               setTTSState(prev => ({
                 ...prev,
                 isLoading: false,
@@ -84,6 +109,7 @@ export function useTTS() {
             };
             
             utterance.onend = () => {
+              console.log('Browser TTS ended');
               setTTSState(prev => ({
                 ...prev,
                 isPlaying: false,
@@ -91,7 +117,8 @@ export function useTTS() {
               }));
             };
             
-            utterance.onerror = () => {
+            utterance.onerror = (event) => {
+              console.error('Browser TTS error:', event);
               setTTSState({
                 isPlaying: false,
                 isLoading: false,
@@ -100,14 +127,41 @@ export function useTTS() {
               });
             };
             
-            speechSynthesis.speak(utterance);
+            // Wait for voices to load if needed
+            if (speechSynthesis.getVoices().length === 0) {
+              speechSynthesis.addEventListener('voiceschanged', () => {
+                const newVoices = speechSynthesis.getVoices();
+                const newRussianVoices = newVoices.filter(voice => 
+                  voice.lang.includes('ru') || 
+                  voice.name.toLowerCase().includes('russian') ||
+                  voice.name.toLowerCase().includes('ru')
+                );
+                
+                if (newRussianVoices.length > 0) {
+                  utterance.voice = newRussianVoices[0];
+                  utterance.lang = newRussianVoices[0].lang;
+                  console.log('Voice loaded, using:', newRussianVoices[0].name);
+                }
+                
+                speechSynthesis.speak(utterance);
+              }, { once: true });
+            } else {
+              speechSynthesis.speak(utterance);
+            }
             return;
+          } else {
+            throw new Error('Браузер не поддерживает синтез речи');
           }
         } catch (browserError) {
           console.error('Browser TTS error:', browserError);
+          setTTSState({
+            isPlaying: false,
+            isLoading: false,
+            currentText: null,
+            error: 'Ошибка браузерного TTS',
+          });
+          return;
         }
-        
-        throw new Error('ElevenLabs API ключ не найден. Проверьте .env файл и убедитесь что VITE_ELEVENLABS_API_KEY установлен правильно.');
       }
 
       console.log('Using ElevenLabs with voice ID:', selectedVoice);
@@ -222,10 +276,17 @@ export function useTTS() {
 
   const stop = useCallback(() => {
     try {
+      // Остановка ElevenLabs аудио
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      
+      // Остановка браузерного TTS
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+      }
+      
       setTTSState({
         isPlaying: false,
         isLoading: false,
