@@ -5,11 +5,13 @@ import { ModeSelector } from '@/components/ModeSelector';
 import { ChatHistory } from '@/components/ChatHistory';
 import { PlanViewer } from '@/components/PlanViewer';
 import { ApiConfigurationWarning } from '@/components/ApiConfigurationWarning';
+import { SmartContextPanel } from '@/components/SmartContextPanel';
 import { ChatMode } from '@/components/modes/ChatMode';
 import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
 import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
 import { useAgentSystem } from '@/hooks/use-agent-system';
 import { useVoiceRecognition } from '@/hooks/use-voice';
+import { useSmartContext } from '@/hooks/use-smart-context';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
 import { vectorService } from '@/lib/services/vector';
 import { toast } from 'sonner';
@@ -20,10 +22,13 @@ function App() {
   const [messages, setMessages] = useKV<Message[]>('chat-messages', []);
   const [isProcessing, setIsProcessing] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [currentQuery, setCurrentQuery] = useState('');
+  const [currentWorkMode, setCurrentWorkMode] = useState<WorkMode>('act');
   
   // Memoize agent system and voice recognition to prevent unnecessary re-renders
   const agentSystem = useAgentSystem();
   const voiceRecognition = useVoiceRecognition();
+  const { addMessageToContext } = useSmartContext();
 
   const {
     agents,
@@ -52,10 +57,19 @@ function App() {
   const handleSendMessage = useCallback(async (text: string, mode: WorkMode, isVoice?: boolean) => {
     if (!text.trim()) return;
 
+    setCurrentQuery(text);
+    setCurrentWorkMode(mode);
     setIsProcessing(true);
 
     const userMessage = createMessage(text, 'user', undefined, isVoice);
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...(prev || []), userMessage]);
+
+    // Добавляем сообщение в умный контекст
+    try {
+      await addMessageToContext(userMessage);
+    } catch (error) {
+      console.error('Error adding message to smart context:', error);
+    }
 
     // Store user message in vector database
     try {
@@ -219,6 +233,19 @@ function App() {
                 onConfirmPlan={handleConfirmPlan}
                 onExecutePlan={() => {}}
                 isExecuting={isWorking}
+              />
+            )}
+
+            {/* Умный контекст */}
+            {currentQuery && (
+              <SmartContextPanel
+                query={currentQuery}
+                mode={currentWorkMode}
+                onSuggestionClick={(suggestion) => {
+                  // TODO: Добавить обработку клика по предложению
+                  console.log('Suggestion clicked:', suggestion);
+                }}
+                className="mt-4"
               />
             )}
           </div>
