@@ -3,7 +3,7 @@ export const config = {
   // Supabase configuration
   supabase: {
     url: import.meta.env.VITE_SUPABASE_URL || 'https://dbwjyqdprvqpajgyvitf.supabase.co',
-    key: import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRid2p5cWRwcnZxcGFqZ3l2aXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5OTQ1NTQsImV4cCI6MjA2ODU3MDU1NH0.NwCwKeLmaE5WaDlZjqjDifGNzObOMPXqLSOrsEeSTxs',
+    key: import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRid2p5cWRwcnZxcGFqZ3l2aXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5OTQ1NTQsImV4cCI6MjA2ODU3MDU1NH0.NwCwKeLmaE5WaDlZjqjDifGNzObOMPXqLSOrsEeSTxs',
   },
   
   // OpenRouter configuration
@@ -32,7 +32,7 @@ export const config = {
   
   // Default models
   models: {
-    defaultLLM: 'openai/gpt-4o',
+    defaultLLM: 'meta-llama/llama-3.1-8b-instruct:free',
     embeddingModel: 'text-embedding-3-small',
     voiceModel: 'eleven_multilingual_v2',
   },

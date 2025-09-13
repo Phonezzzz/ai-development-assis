@@ -38,6 +38,13 @@ export function ModelSelector() {
       case 'meta': return 'bg-blue-500/20 text-blue-300';
       case 'google': return 'bg-red-500/20 text-red-300';
       case 'mistral ai': return 'bg-purple-500/20 text-purple-300';
+      case 'cohere': return 'bg-teal-500/20 text-teal-300';
+      case 'deepseek': return 'bg-indigo-500/20 text-indigo-300';
+      case 'qwen': return 'bg-cyan-500/20 text-cyan-300';
+      case 'perplexity': return 'bg-amber-500/20 text-amber-300';
+      case 'nvidia': return 'bg-lime-500/20 text-lime-300';
+      case 'microsoft': return 'bg-sky-500/20 text-sky-300';
+      case 'hugging face': return 'bg-yellow-500/20 text-yellow-300';
       default: return 'bg-gray-500/20 text-gray-300';
     }
   };

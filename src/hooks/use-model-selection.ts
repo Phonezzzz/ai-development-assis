@@ -57,8 +57,14 @@ export function useModelSelection() {
     if (id.includes('anthropic/')) return 'Anthropic';
     if (id.includes('meta-llama/')) return 'Meta';
     if (id.includes('google/')) return 'Google';
-    if (id.includes('mistral/')) return 'Mistral AI';
+    if (id.includes('mistralai/')) return 'Mistral AI';
     if (id.includes('cohere/')) return 'Cohere';
+    if (id.includes('deepseek/')) return 'DeepSeek';
+    if (id.includes('qwen/')) return 'Qwen';
+    if (id.includes('perplexity/')) return 'Perplexity';
+    if (id.includes('nvidia/')) return 'NVIDIA';
+    if (id.includes('microsoft/')) return 'Microsoft';
+    if (id.includes('huggingfaceh4/')) return 'Hugging Face';
     return 'Other';
   };
 
