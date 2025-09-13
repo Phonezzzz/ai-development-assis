@@ -126,15 +126,19 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                         : "bg-card"
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        {message.content.includes('```') ? (
-                          <pre className="syntax-highlight whitespace-pre-wrap overflow-x-auto">
-                            {message.content}
-                          </pre>
-                        ) : (
-                          <p className="whitespace-pre-wrap">{message.content}</p>
-                        )}
+                    <div className="mb-2">
+                      {message.content.includes('```') ? (
+                        <pre className="syntax-highlight whitespace-pre-wrap overflow-x-auto">
+                          {message.content}
+                        </pre>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs opacity-70">
+                        {formatTimestamp(message.timestamp)}
                       </div>
                       
                       {message.type === 'agent' && (
@@ -168,10 +172,6 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                           </Button>
                         </div>
                       )}
-                    </div>
-                    
-                    <div className="text-xs opacity-70 mt-2">
-                      {formatTimestamp(message.timestamp)}
                     </div>
                   </Card>
                 </div>
