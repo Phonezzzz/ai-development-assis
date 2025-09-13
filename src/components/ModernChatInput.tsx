@@ -106,7 +106,6 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     
     if (!isSupported) {
       console.warn('Speech recognition not supported');
-      alert('Распознавание речи не поддерживается в этом браузере. Попробуйте использовать Chrome, Edge или Safari.');
       return;
     }
 
@@ -313,11 +312,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('STT button clicked directly');
-                
-                // Простой тест на клик
-                alert('Кнопка STT нажата! Поддержка: ' + (isSupported ? 'Да' : 'Нет'));
-                
+                console.log('STT button clicked - calling toggleVoiceRecognition');
                 toggleVoiceRecognition();
               }}
               className={cn(
@@ -328,7 +323,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
               title={voiceState.isListening ? "Остановить запись" : "Голосовой ввод"}
-              disabled={false}
+              disabled={!isSupported}
             >
               {voiceState.isListening ? <MicrophoneSlash size={16} /> : <Microphone size={16} />}
             </Button>
@@ -405,6 +400,8 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
           <div className="text-xs text-muted-foreground">
             STT поддержка: {isSupported ? '✅' : '❌'} | 
             Web Speech API: {(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition ? '✅' : '❌'} |
+            MediaDevices: {navigator.mediaDevices ? '✅' : '❌'} |
+            getUserMedia: {typeof navigator.mediaDevices?.getUserMedia === 'function' ? '✅' : '❌'} |
             Состояние: {voiceState.isListening ? 'Слушаю' : 'Ожидание'} |
             Транскрипт: "{voiceState.transcript}"
           </div>

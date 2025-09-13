@@ -51,7 +51,6 @@ export function useVoiceSTT() {
     const recognition = recognitionRef.current;
     if (!recognition) {
       console.error('STT: Recognition не инициализирован');
-      alert('Распознавание речи не поддерживается в этом браузере');
       return;
     }
 
@@ -126,7 +125,7 @@ export function useVoiceSTT() {
       };
 
       recognition.onerror = (event: any) => {
-        console.error('STT: Ошибка распознавания:', event.error);
+        console.error('STT: Ошибка распознавания:', event.error, 'Дополнительная информация:', event);
         
         setVoiceState(prev => ({
           ...prev,
@@ -136,11 +135,13 @@ export function useVoiceSTT() {
 
         // Показываем ошибку только для критических случаев
         if (event.error === 'not-allowed') {
-          alert('Доступ к микрофону запрещен. Разрешите использование микрофона в настройках браузера.');
+          console.error('STT: Доступ к микрофону запрещен');
         } else if (event.error === 'audio-capture') {
-          alert('Ошибка захвата аудио. Проверьте подключение микрофона.');
+          console.error('STT: Ошибка захвата аудио');
+        } else if (event.error === 'network') {
+          console.error('STT: Сетевая ошибка');
         } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
-          console.warn('STT: Ошибка распознавания:', event.error);
+          console.warn('STT: Неизвестная ошибка:', event.error);
         }
       };
 
@@ -166,12 +167,12 @@ export function useVoiceSTT() {
         isProcessing: false,
       }));
       
-      if (error.name === 'NotAllowedError') {
-        alert('Доступ к микрофону запрещен. Разрешите использование микрофона в настройках браузера.');
-      } else if (error.name === 'NotFoundError') {
-        alert('Микрофон не найден. Подключите микрофон и попробуйте снова.');
+      if ((error as any).name === 'NotAllowedError') {
+        console.error('STT: Доступ к микрофону запрещен');
+      } else if ((error as any).name === 'NotFoundError') {
+        console.error('STT: Микрофон не найден');
       } else {
-        alert('Ошибка доступа к микрофону: ' + error.message);
+        console.error('STT: Неизвестная ошибка доступа к микрофону:', (error as any).message);
       }
     }
   }, [voiceState.isListening]);
@@ -190,7 +191,9 @@ export function useVoiceSTT() {
 
   const isSupported = Boolean(
     typeof window !== 'undefined' && 
-    ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) &&
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia
   );
 
   return {
