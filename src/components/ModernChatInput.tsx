@@ -17,7 +17,7 @@ import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
-import { useWebAudioSTT } from '@/hooks/use-web-audio-stt';
+import { useVoiceRecognition } from '@/hooks/use-voice';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -66,16 +66,14 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     startListening, 
     stopListening, 
     isSupported,
-    supportDetails 
-  } = useWebAudioSTT();
+  } = useVoiceRecognition();
 
   // Обновляем input при получении транскрипта
   useEffect(() => {
-    if (voiceState.transcript && !voiceState.isProcessing && !voiceState.isListening) {
-      setInput(voiceState.transcript);
-      // Не отправляем автоматически, позволяем пользователю решить
+    if (voiceState.transcript.trim()) {
+      setInput(voiceState.transcript.trim());
     }
-  }, [voiceState.transcript, voiceState.isProcessing, voiceState.isListening]);
+  }, [voiceState.transcript]);
 
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
@@ -390,25 +388,13 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-muted-foreground space-y-1">
             <div>
-              STT поддержка: {isSupported ? '✅' : '❌'} | 
-              MediaRecorder: {supportDetails?.hasMediaRecorder ? '✅' : '❌'} |
-              MediaDevices: {supportDetails?.hasMediaDevices ? '✅' : '❌'} |
-              getUserMedia: {supportDetails?.hasGetUserMedia ? '✅' : '❌'} |
-              WebAudio: {supportDetails?.hasWebAudio ? '✅' : '❌'}
-            </div>
-            <div>
-              Протокол: {supportDetails?.protocol || window.location.protocol} |
-              Secure Context: {supportDetails?.isSecureContext ? '✅' : '❌'} |
+              STT поддержка: {isSupported ? '✅' : '❌'} |
               Состояние: {voiceState.isListening ? 'Слушаю' : voiceState.isProcessing ? 'Обработка' : 'Ожидание'} |
               Кнопка: {!isSupported ? 'Заблокирована' : 'Активна'}
             </div>
             <div>
               Транскрипт: "{voiceState.transcript}" |
-              Уверенность: {(voiceState.confidence * 100).toFixed(1)}% |
-              Аудио уровень: {((voiceState as any).audioLevel * 100).toFixed(1)}%
-            </div>
-            <div className="text-xs opacity-75">
-              Браузер: {supportDetails?.userAgent?.slice(0, 50)}...
+              Уверенность: {(voiceState.confidence * 100).toFixed(1)}%
             </div>
           </div>
         )}

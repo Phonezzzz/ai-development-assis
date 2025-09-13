@@ -24,7 +24,7 @@ export function useVoiceRecognition() {
         if (SpeechRecognition) {
           console.log('STT: API распознавания речи найден');
           const recognitionInstance = new SpeechRecognition();
-          recognitionInstance.continuous = false;
+          recognitionInstance.continuous = true;
           recognitionInstance.interimResults = true;
           recognitionInstance.lang = 'ru-RU';
           
@@ -100,14 +100,10 @@ export function useVoiceRecognition() {
             ...prev,
             transcript,
             confidence: event.results[event.results.length - 1]?.[0]?.confidence || 0,
-            isProcessing: !finalTranscript,
+            isProcessing: true, // Продолжаем обработку
           }));
 
-          // Если есть финальный результат, останавливаем
-          if (finalTranscript) {
-            console.log('STT: Финальный результат получен:', finalTranscript);
-            setTimeout(() => recognition.stop(), 100);
-          }
+          // Не останавливаем автоматически - пользователь должен нажать кнопку ещё раз
         } catch (error) {
           console.error('STT: Ошибка обработки результата:', error);
         }
