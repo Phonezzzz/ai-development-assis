@@ -102,12 +102,6 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     console.log('Кнопка STT нажата!');
     console.log('isSupported:', isSupported);
     console.log('voiceState:', voiceState);
-    console.log('window.SpeechRecognition:', !!(window as any).SpeechRecognition);
-    console.log('window.webkitSpeechRecognition:', !!(window as any).webkitSpeechRecognition);
-    console.log('navigator.mediaDevices:', !!navigator.mediaDevices);
-    console.log('navigator.mediaDevices.getUserMedia:', !!navigator.mediaDevices?.getUserMedia);
-    
-    alert(`Кнопка STT нажата! Поддержка: ${isSupported ? 'Да' : 'Нет'}`);
     
     if (!isSupported) {
       console.warn('Speech recognition not supported');
