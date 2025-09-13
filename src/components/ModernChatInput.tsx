@@ -2,16 +2,21 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { AgentSelector } from '@/components/AgentSelector';
 import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
+import { useModelSelection } from '@/hooks/use-model-selection';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -21,7 +26,9 @@ import {
   Robot,
   Wrench,
   Brain,
-  CaretDown
+  CaretDown,
+  Sparkle,
+  ArrowClockwise
 } from '@phosphor-icons/react';
 
 interface ModernChatInputProps {
@@ -30,23 +37,6 @@ interface ModernChatInputProps {
   disabled?: boolean;
 }
 
-interface ModelOption {
-  id: string;
-  name: string;
-  provider: string;
-  contextLength: number;
-  enabled: boolean;
-}
-
-const AVAILABLE_MODELS: ModelOption[] = [
-  { id: 'gpt-4', name: 'GPT-4', provider: 'OpenAI', contextLength: 8192, enabled: true },
-  { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', contextLength: 128000, enabled: true },
-  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI', contextLength: 16384, enabled: true },
-  { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic', contextLength: 200000, enabled: false },
-  { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', provider: 'Anthropic', contextLength: 200000, enabled: false },
-  { id: 'gemini-pro', name: 'Gemini Pro', provider: 'Google', contextLength: 32768, enabled: false },
-];
-
 const AGENT_TOOLS = [
   { id: 'web-search', name: 'Веб поиск', icon: '🔍', description: 'Поиск информации в интернете' },
   { id: 'add-new-tool', name: '+ Добавить инструмент', icon: '➕', description: 'Создать новый инструмент' },
@@ -54,12 +44,21 @@ const AGENT_TOOLS = [
 
 export function ModernChatInput({ onSubmit, placeholder = "Спросите что угодно или упомяните пространство", disabled }: ModernChatInputProps) {
   const [input, setInput] = useState('');
-  const [selectedModel, setSelectedModel] = useKV<string>('selected-model', 'gpt-4');
   const [workMode, setWorkMode] = useKV<WorkMode>('work-mode', 'ask');
   const [selectedTools, setSelectedTools] = useKV<string[]>('selected-tools', []);
   const [selectedAgent, setSelectedAgent] = useKV<string>('selected-agent', 'architector');
   const [isListening, setIsListening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Используем хук для работы с моделями
+  const {
+    availableModels,
+    currentModel,
+    selectModel,
+    isLoading,
+    isConfigured,
+    refreshModels,
+  } = useModelSelection();
 
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
@@ -96,7 +95,23 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     input.click();
   }, []);
 
-  const selectedModelData = AVAILABLE_MODELS.find(m => m.id === selectedModel);
+  const getProviderColor = (provider: string) => {
+    switch (provider.toLowerCase()) {
+      case 'openai': return 'bg-green-500/20 text-green-300';
+      case 'anthropic': return 'bg-orange-500/20 text-orange-300';
+      case 'meta': return 'bg-blue-500/20 text-blue-300';
+      case 'google': return 'bg-red-500/20 text-red-300';
+      case 'mistral ai': return 'bg-purple-500/20 text-purple-300';
+      case 'cohere': return 'bg-teal-500/20 text-teal-300';
+      case 'deepseek': return 'bg-indigo-500/20 text-indigo-300';
+      case 'qwen': return 'bg-cyan-500/20 text-cyan-300';
+      case 'perplexity': return 'bg-amber-500/20 text-amber-300';
+      case 'nvidia': return 'bg-lime-500/20 text-lime-300';
+      case 'microsoft': return 'bg-sky-500/20 text-sky-300';
+      case 'hugging face': return 'bg-yellow-500/20 text-yellow-300';
+      default: return 'bg-gray-500/20 text-gray-300';
+    }
+  };
 
   return (
     <Card className="p-4 bg-card border">
@@ -111,34 +126,77 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                   variant="ghost" 
                   size="sm" 
                   className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]"
-                  title={`Модель: ${selectedModelData?.name || 'Не выбрана'}`}
+                  title={`Модель: ${currentModel?.name || 'Не выбрана'}`}
+                  disabled={isLoading}
                 >
-                  <Brain size={14} />
+                  {isLoading ? (
+                    <ArrowClockwise size={14} className="animate-spin" />
+                  ) : (
+                    <Brain size={14} />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                {AVAILABLE_MODELS.map((model) => (
-                  <DropdownMenuItem
-                    key={model.id}
-                    onClick={() => setSelectedModel(model.id)}
-                    disabled={!model.enabled}
-                    className={cn(
-                      "flex flex-col items-start gap-1 p-3",
-                      selectedModel === model.id && "bg-accent",
-                      !model.enabled && "opacity-50"
-                    )}
+              <DropdownMenuContent align="start" className="w-80">
+                <div className="flex items-center justify-between p-2">
+                  <DropdownMenuLabel>Выбор модели ИИ</DropdownMenuLabel>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={refreshModels}
+                    className="h-6 w-6 p-0"
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="font-medium">{model.name}</span>
-                      {!model.enabled && (
-                        <span className="text-xs text-muted-foreground">Недоступно</span>
+                    <ArrowClockwise className="h-3 w-3" />
+                  </Button>
+                </div>
+                
+                {!isConfigured && (
+                  <>
+                    <div className="px-2 py-1">
+                      <div className="flex items-center gap-2 text-sm text-yellow-400">
+                        <span>⚠️ API не настроен - демо режим</span>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+
+                <div className="max-h-96 overflow-y-auto">
+                  {availableModels.map((model) => (
+                    <DropdownMenuItem
+                      key={model.id}
+                      onClick={() => selectModel(model.id)}
+                      className="flex flex-col items-start gap-1 p-3 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="font-medium">{model.name}</span>
+                        <div className="flex items-center gap-1 ml-auto">
+                          {model.free && (
+                            <Badge variant="secondary" className="text-xs">
+                              FREE
+                            </Badge>
+                          )}
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${getProviderColor(model.provider)}`}
+                          >
+                            {model.provider}
+                          </Badge>
+                        </div>
+                      </div>
+                      {model.description && (
+                        <p className="text-xs text-muted-foreground">
+                          {model.description}
+                        </p>
                       )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {model.provider} • {model.contextLength.toLocaleString()} токенов
-                    </div>
-                  </DropdownMenuItem>
-                ))}
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+
+                {availableModels.length === 0 && (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Модели не найдены
+                  </div>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 

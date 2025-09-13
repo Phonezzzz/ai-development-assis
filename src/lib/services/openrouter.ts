@@ -10,6 +10,7 @@ export interface Model {
     completion: number;
   };
   contextLength: number;
+  free?: boolean;
 }
 
 export interface ChatMessage {
@@ -58,30 +59,106 @@ class OpenRouterService {
   }
 
   async getModels(): Promise<Model[]> {
-    if (!this.isConfigured()) {
-      // Return mock models for demo
-      return this.getMockModels();
-    }
-
+    // Always try to fetch from OpenRouter API first
     try {
       const response = await fetch(`${this.baseUrl}/models`, {
-        headers: {
+        method: 'GET',
+        headers: this.isConfigured() ? {
           'Authorization': `Bearer ${this.apiKey}`,
           'HTTP-Referer': window.location.origin,
           'X-Title': 'AI Agent Workspace',
-        },
+        } : {},
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch models: ${response.statusText}`);
+      if (response.ok) {
+        const data = await response.json();
+        const models = data.data || [];
+        
+        // Transform OpenRouter models to our format
+        return models.map((model: any) => ({
+          id: model.id,
+          name: model.name || model.id,
+          provider: this.extractProvider(model.id),
+          maxTokens: model.top_provider?.max_completion_tokens || 4096,
+          pricing: {
+            prompt: parseFloat(model.pricing?.prompt || '0') * 1000000, // Convert to per-1M tokens
+            completion: parseFloat(model.pricing?.completion || '0') * 1000000,
+          },
+          contextLength: model.context_length || 4096,
+          free: (parseFloat(model.pricing?.prompt || '0') === 0 && parseFloat(model.pricing?.completion || '0') === 0) || model.id.includes(':free'),
+        })).filter((model: Model) => 
+          // Filter out models that don't support chat completion
+          !model.id.includes('embedding') && 
+          !model.id.includes('tts') && 
+          !model.id.includes('whisper') &&
+          !model.id.includes('dall-e')
+        ).sort((a: Model, b: Model) => {
+          // Sort by provider, then by name
+          if (a.provider !== b.provider) {
+            return a.provider.localeCompare(b.provider);
+          }
+          return a.name.localeCompare(b.name);
+        });
       }
-
-      const data = await response.json();
-      return data.data || [];
     } catch (error) {
-      console.error('Error fetching models:', error);
-      return this.getMockModels();
+      console.error('Error fetching models from OpenRouter:', error);
     }
+
+    // Fallback to mock models
+    return this.getMockModels();
+  }
+
+  private extractProvider(modelId: string): string {
+    const parts = modelId.split('/');
+    if (parts.length > 1) {
+      const provider = parts[0];
+      // Map common provider names to readable format
+      const providerMap: { [key: string]: string } = {
+        'openai': 'OpenAI',
+        'anthropic': 'Anthropic',
+        'google': 'Google',
+        'meta-llama': 'Meta',
+        'mistralai': 'Mistral AI',
+        'cohere': 'Cohere',
+        'deepseek': 'DeepSeek',
+        'qwen': 'Qwen',
+        'microsoft': 'Microsoft',
+        'nvidia': 'NVIDIA',
+        'perplexity': 'Perplexity',
+        'huggingfaceh4': 'Hugging Face',
+        'nousresearch': 'Nous Research',
+        'teknium': 'Teknium',
+        'liquid': 'Liquid',
+        'alpindale': 'Alpindale',
+        'gryphe': 'Gryphe',
+        'koboldai': 'KoboldAI',
+        'mancer': 'Mancer',
+        'neversleep': 'NeverSleep',
+        'undi95': 'Undi95',
+        'jondurbin': 'Jon Durbin',
+        'cognitivecomputations': 'Cognitive Computations',
+        'lizpreciatior': 'Liz Preciatior',
+        'recursal': 'Recursal',
+        'lynn': 'Lynn',
+        'flammenai': 'FlammenAI',
+        'sophosympatheia': 'Sophosympatheia',
+        'rwkv': 'RWKV',
+        'togethercomputer': 'Together',
+        'databricks': 'Databricks',
+        'mattshumer': 'Matt Shumer',
+        'austism': 'Austism',
+        'sammcj': 'Samm C',
+        'nothingiisreal': 'NothingIsReal',
+        'sao10k': 'Sao10K',
+        'dragonfly': 'Dragonfly',
+        'infermatic': 'Infermatic',
+        'eva-unit-01': 'Eva Unit 01',
+        'thebloke': 'TheBloke',
+        'bigcode': 'BigCode',
+      };
+      return providerMap[provider.toLowerCase()] || provider;
+    }
+    return 'Unknown';
   }
 
   async createChatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
@@ -129,6 +206,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0, completion: 0 },
         contextLength: 131072,
+        free: true,
       },
       {
         id: 'meta-llama/llama-3.2-3b-instruct:free',
@@ -137,6 +215,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0, completion: 0 },
         contextLength: 131072,
+        free: true,
       },
       {
         id: 'meta-llama/llama-3.2-1b-instruct:free',
@@ -145,6 +224,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0, completion: 0 },
         contextLength: 131072,
+        free: true,
       },
       {
         id: 'microsoft/phi-3-mini-128k-instruct:free',
@@ -153,6 +233,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0, completion: 0 },
         contextLength: 128000,
+        free: true,
       },
       {
         id: 'mistralai/mistral-7b-instruct:free',
@@ -161,6 +242,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0, completion: 0 },
         contextLength: 32768,
+        free: true,
       },
 
       // OPENAI MODELS
@@ -171,6 +253,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.005, completion: 0.015 },
         contextLength: 128000,
+        free: false,
       },
       {
         id: 'openai/gpt-4o-mini',
@@ -179,6 +262,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.00015, completion: 0.0006 },
         contextLength: 128000,
+        free: false,
       },
       {
         id: 'openai/gpt-4-turbo',
@@ -187,6 +271,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.01, completion: 0.03 },
         contextLength: 128000,
+        free: false,
       },
       {
         id: 'openai/gpt-4',
@@ -195,6 +280,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.03, completion: 0.06 },
         contextLength: 8192,
+        free: false,
       },
       {
         id: 'openai/gpt-3.5-turbo',
@@ -203,6 +289,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.0005, completion: 0.0015 },
         contextLength: 16385,
+        free: false,
       },
 
       // ANTHROPIC MODELS
@@ -213,6 +300,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.003, completion: 0.015 },
         contextLength: 200000,
+        free: false,
       },
       {
         id: 'anthropic/claude-3-opus',
@@ -221,6 +309,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.015, completion: 0.075 },
         contextLength: 200000,
+        free: false,
       },
       {
         id: 'anthropic/claude-3-sonnet',
@@ -229,6 +318,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.003, completion: 0.015 },
         contextLength: 200000,
+        free: false,
       },
       {
         id: 'anthropic/claude-3-haiku',
@@ -237,6 +327,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.00025, completion: 0.00125 },
         contextLength: 200000,
+        free: false,
       },
 
       // GOOGLE MODELS
@@ -247,6 +338,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.00125, completion: 0.005 },
         contextLength: 2000000,
+        free: false,
       },
       {
         id: 'google/gemini-flash-1.5',
@@ -255,6 +347,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.00025, completion: 0.0075 },
         contextLength: 1000000,
+        free: false,
       },
       {
         id: 'google/gemini-pro',
@@ -263,6 +356,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.0005, completion: 0.0015 },
         contextLength: 32768,
+        free: false,
       },
 
       // META MODELS
@@ -273,6 +367,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.005, completion: 0.015 },
         contextLength: 131072,
+        free: false,
       },
       {
         id: 'meta-llama/llama-3.1-70b-instruct',
@@ -281,6 +376,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.0009, completion: 0.0009 },
         contextLength: 131072,
+        free: false,
       },
       {
         id: 'meta-llama/llama-3.1-8b-instruct',
@@ -289,22 +385,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.00025, completion: 0.00025 },
         contextLength: 131072,
-      },
-      {
-        id: 'meta-llama/llama-3.2-90b-vision-instruct',
-        name: 'Llama 3.2 90B Vision Instruct',
-        provider: 'Meta',
-        maxTokens: 4096,
-        pricing: { prompt: 0.0009, completion: 0.0009 },
-        contextLength: 131072,
-      },
-      {
-        id: 'meta-llama/llama-3.2-11b-vision-instruct',
-        name: 'Llama 3.2 11B Vision Instruct',
-        provider: 'Meta',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00025, completion: 0.00025 },
-        contextLength: 131072,
+        free: false,
       },
 
       // MISTRAL MODELS
@@ -315,6 +396,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.008, completion: 0.024 },
         contextLength: 128000,
+        free: false,
       },
       {
         id: 'mistralai/mistral-medium',
@@ -323,6 +405,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.0027, completion: 0.0081 },
         contextLength: 32000,
+        free: false,
       },
       {
         id: 'mistralai/mistral-small',
@@ -331,41 +414,10 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.002, completion: 0.006 },
         contextLength: 32000,
-      },
-      {
-        id: 'mistralai/mistral-7b-instruct',
-        name: 'Mistral 7B Instruct',
-        provider: 'Mistral AI',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00025, completion: 0.00025 },
-        contextLength: 32768,
-      },
-      {
-        id: 'mistralai/mixtral-8x7b-instruct',
-        name: 'Mixtral 8x7B Instruct',
-        provider: 'Mistral AI',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00024, completion: 0.00024 },
-        contextLength: 32768,
-      },
-      {
-        id: 'mistralai/mixtral-8x22b-instruct',
-        name: 'Mixtral 8x22B Instruct',
-        provider: 'Mistral AI',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00065, completion: 0.00065 },
-        contextLength: 65536,
-      },
-      {
-        id: 'mistralai/pixtral-12b',
-        name: 'Pixtral 12B',
-        provider: 'Mistral AI',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00015, completion: 0.00015 },
-        contextLength: 128000,
+        free: false,
       },
 
-      // COHERE MODELS
+      // OTHER MODELS
       {
         id: 'cohere/command-r-plus',
         name: 'Command R+',
@@ -373,17 +425,8 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.003, completion: 0.015 },
         contextLength: 128000,
+        free: false,
       },
-      {
-        id: 'cohere/command-r',
-        name: 'Command R',
-        provider: 'Cohere',
-        maxTokens: 4096,
-        pricing: { prompt: 0.0005, completion: 0.0015 },
-        contextLength: 128000,
-      },
-
-      // DEEPSEEK MODELS
       {
         id: 'deepseek/deepseek-chat',
         name: 'DeepSeek Chat',
@@ -391,17 +434,8 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.00014, completion: 0.00028 },
         contextLength: 64000,
+        free: false,
       },
-      {
-        id: 'deepseek/deepseek-coder',
-        name: 'DeepSeek Coder',
-        provider: 'DeepSeek',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00014, completion: 0.00028 },
-        contextLength: 64000,
-      },
-
-      // QWEN MODELS
       {
         id: 'qwen/qwen-2.5-72b-instruct',
         name: 'Qwen 2.5 72B Instruct',
@@ -409,80 +443,7 @@ class OpenRouterService {
         maxTokens: 4096,
         pricing: { prompt: 0.0009, completion: 0.0009 },
         contextLength: 131072,
-      },
-      {
-        id: 'qwen/qwen-2.5-14b-instruct',
-        name: 'Qwen 2.5 14B Instruct',
-        provider: 'Qwen',
-        maxTokens: 4096,
-        pricing: { prompt: 0.0002, completion: 0.0002 },
-        contextLength: 131072,
-      },
-      {
-        id: 'qwen/qwen-2.5-7b-instruct',
-        name: 'Qwen 2.5 7B Instruct',
-        provider: 'Qwen',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00009, completion: 0.00009 },
-        contextLength: 131072,
-      },
-      {
-        id: 'qwen/qwen-2.5-coder-32b-instruct',
-        name: 'Qwen 2.5 Coder 32B Instruct',
-        provider: 'Qwen',
-        maxTokens: 4096,
-        pricing: { prompt: 0.0002, completion: 0.0002 },
-        contextLength: 131072,
-      },
-
-      // OTHER MODELS
-      {
-        id: 'perplexity/llama-3.1-sonar-large-128k-online',
-        name: 'Llama 3.1 Sonar Large 128K Online',
-        provider: 'Perplexity',
-        maxTokens: 4096,
-        pricing: { prompt: 0.001, completion: 0.001 },
-        contextLength: 127072,
-      },
-      {
-        id: 'perplexity/llama-3.1-sonar-small-128k-online',
-        name: 'Llama 3.1 Sonar Small 128K Online',
-        provider: 'Perplexity',
-        maxTokens: 4096,
-        pricing: { prompt: 0.0002, completion: 0.0002 },
-        contextLength: 127072,
-      },
-      {
-        id: 'nvidia/llama-3.1-nemotron-70b-instruct',
-        name: 'Llama 3.1 Nemotron 70B Instruct',
-        provider: 'NVIDIA',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00035, completion: 0.0004 },
-        contextLength: 131072,
-      },
-      {
-        id: 'microsoft/wizardlm-2-8x22b',
-        name: 'WizardLM-2 8x22B',
-        provider: 'Microsoft',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00065, completion: 0.00065 },
-        contextLength: 65536,
-      },
-      {
-        id: 'microsoft/phi-3-medium-128k-instruct',
-        name: 'Phi-3 Medium 128K Instruct',
-        provider: 'Microsoft',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00014, completion: 0.00014 },
-        contextLength: 128000,
-      },
-      {
-        id: 'huggingfaceh4/zephyr-7b-beta',
-        name: 'Zephyr 7B Beta',
-        provider: 'Hugging Face',
-        maxTokens: 4096,
-        pricing: { prompt: 0.00025, completion: 0.00025 },
-        contextLength: 32768,
+        free: false,
       },
     ];
   }
