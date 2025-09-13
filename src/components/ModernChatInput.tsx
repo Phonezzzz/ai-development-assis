@@ -110,7 +110,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted"
+                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]"
                   title={`Модель: ${selectedModelData?.name || 'Не выбрана'}`}
                 >
                   <Brain size={14} />
@@ -148,7 +148,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted"
+                  className="h-6 w-6 p-0 bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]"
                   title={`Инструменты: ${selectedTools?.length || 0} активно`}
                 >
                   <Wrench size={14} />
@@ -210,9 +210,10 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               size="sm"
               onClick={toggleVoiceRecognition}
               className={cn(
-                "h-7 w-7 p-0 transition-colors",
+                "h-7 w-7 p-0 transition-all duration-200 border border-transparent",
+                "hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]",
                 isListening 
-                  ? "text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20" 
+                  ? "text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]" 
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
               title={isListening ? "Остановить запись" : "Голосовой ввод"}
@@ -226,7 +227,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               variant="ghost"
               size="sm"
               onClick={handleFileUpload}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 border border-transparent hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]"
               title="Прикрепить файл"
             >
               <Paperclip size={16} />
@@ -238,8 +239,9 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               size="sm"
               disabled={!input.trim() || disabled}
               className={cn(
-                "h-7 w-7 p-0 bg-accent hover:bg-accent/90 text-accent-foreground",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
+                "h-7 w-7 p-0 bg-accent hover:bg-accent/90 text-accent-foreground transition-all duration-200",
+                "border border-accent hover:shadow-[0_0_12px_rgba(147,51,234,0.5)]",
+                "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:border-transparent"
               )}
               title="Отправить сообщение"
             >

@@ -152,7 +152,7 @@ export function AgentSelector({ selectedAgent, onAgentSelect, className }: Agent
             variant="ghost" 
             size="sm" 
             className={cn(
-              "h-6 w-6 p-0 bg-muted/50 hover:bg-muted",
+              "h-6 w-6 p-0 bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]",
               className
             )}
             title={`Агент: ${currentAgent?.name || 'Не выбран'}`}
