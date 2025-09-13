@@ -8,7 +8,7 @@ import { MessageActions } from '@/components/MessageActions';
 import { STTDebug } from '@/components/STTDebug';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
-import { useVoiceRecognition } from '@/hooks/use-voice';
+import { useVoiceUnified } from '@/hooks/use-voice-unified';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -20,7 +20,6 @@ interface ChatModeProps {
 }
 
 export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProps) {
-  const { speak } = useVoiceRecognition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive

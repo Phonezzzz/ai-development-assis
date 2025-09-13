@@ -11,7 +11,7 @@ import { ChatMode } from '@/components/modes/ChatMode';
 import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
 import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
 import { useAgentSystem } from '@/hooks/use-agent-system';
-import { useVoiceRecognition } from '@/hooks/use-voice';
+import { useVoiceUnified } from '@/hooks/use-voice-unified';
 import { useTTS } from '@/hooks/use-tts';
 import { useSmartContext } from '@/hooks/use-smart-context';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
@@ -32,7 +32,7 @@ function App() {
   
   // Memoize agent system and voice recognition to prevent unnecessary re-renders
   const agentSystem = useAgentSystem();
-  const voiceRecognition = useVoiceRecognition();
+  const voiceRecognition = useVoiceUnified();
   const { speak: ttsSpeak, stop: ttsStop } = useTTS();
   const { addMessageToContext } = useSmartContext();
 
@@ -46,8 +46,6 @@ function App() {
     executePlan,
     resetAllAgents,
   } = agentSystem;
-
-  const { speak } = voiceRecognition;
 
   const createMessage = useCallback((content: string, type: 'user' | 'agent', agentType?: AgentType, isVoice?: boolean): Message => {
     return {
@@ -246,7 +244,7 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [setMessages, createPlan, speak, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan, addMessageToContext]);
+  }, [setMessages, createPlan, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan, addMessageToContext]);
 
   const handleConfirmPlan = useCallback(() => {
     confirmPlan();
