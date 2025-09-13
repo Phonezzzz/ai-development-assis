@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
-import { ttsService, Voice } from '@/lib/services/tts';
 
 export interface TTSState {
   isPlaying: boolean;
@@ -17,25 +16,41 @@ export function useTTS() {
     error: null,
   });
 
-  const [selectedVoice] = useKV<string>('selected-voice', 'EXAVITQu4vr4xnSDxMaL');
-  const [voices, setVoices] = useState<Voice[]>([]);
+  const [selectedVoice] = useKV<string>('selected-voice', '');
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   // Load available voices
   useEffect(() => {
-    const loadVoices = async () => {
-      try {
-        const availableVoices = await ttsService.getVoices();
+    const loadVoices = () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const availableVoices = window.speechSynthesis.getVoices();
         setVoices(availableVoices);
-      } catch (error) {
-        console.error('Error loading voices:', error);
       }
     };
 
     loadVoices();
+
+    // Listen for voices changed event
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
   }, []);
 
   const speak = useCallback(async (text: string) => {
     try {
+      if (!text.trim()) return;
+
+      // Stop any current speech
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+
       setTTSState({
         isPlaying: false,
         isLoading: true,
@@ -43,19 +58,51 @@ export function useTTS() {
         error: null,
       });
 
-      setTTSState(prev => ({
-        ...prev,
-        isPlaying: true,
-        isLoading: false,
-      }));
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Find and set selected voice
+      if (selectedVoice) {
+        const voice = voices.find(v => v.voiceURI === selectedVoice);
+        if (voice) {
+          utterance.voice = voice;
+        }
+      }
 
-      await ttsService.speak(text, selectedVoice);
+      // Set voice parameters
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
 
-      setTTSState(prev => ({
-        ...prev,
-        isPlaying: false,
-        currentText: null,
-      }));
+      // Set up event handlers
+      utterance.onstart = () => {
+        setTTSState(prev => ({
+          ...prev,
+          isPlaying: true,
+          isLoading: false,
+        }));
+      };
+
+      utterance.onend = () => {
+        setTTSState(prev => ({
+          ...prev,
+          isPlaying: false,
+          currentText: null,
+        }));
+      };
+
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        setTTSState({
+          isPlaying: false,
+          isLoading: false,
+          currentText: null,
+          error: 'Ошибка при озвучивании текста',
+        });
+      };
+
+      // Start speaking
+      window.speechSynthesis.speak(utterance);
+
     } catch (error) {
       console.error('TTS Error:', error);
       setTTSState({
@@ -65,11 +112,13 @@ export function useTTS() {
         error: error instanceof Error ? error.message : 'Ошибка TTS',
       });
     }
-  }, [selectedVoice]);
+  }, [selectedVoice, voices]);
 
   const stop = useCallback(() => {
     try {
-      ttsService.stop();
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
       setTTSState({
         isPlaying: false,
         isLoading: false,
@@ -82,7 +131,7 @@ export function useTTS() {
   }, []);
 
   const isAvailable = useCallback(() => {
-    return ttsService.isAvailable();
+    return typeof window !== 'undefined' && 'speechSynthesis' in window;
   }, []);
 
   return {

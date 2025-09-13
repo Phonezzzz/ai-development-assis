@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import {
   Dialog,
@@ -27,6 +27,7 @@ export function SettingsDialog() {
   const [systemPrompt, setSystemPrompt] = useKV<string>('system-prompt', 
     'Вы - умный помощник, который отвечает на русском языке. Будьте полезными, точными и дружелюбными.'
   );
+  const [availableVoices, setAvailableVoices] = useState<VoiceOption[]>([]);
 
   // Получаем доступные русские голоса
   const getRussianVoices = (): VoiceOption[] => {
@@ -42,11 +43,53 @@ export function SettingsDialog() {
       }));
   };
 
-  const [availableVoices] = useState<VoiceOption[]>(getRussianVoices());
+  // Загружаем голоса при открытии диалога и обновляем их
+  useEffect(() => {
+    const updateVoices = () => {
+      const voices = getRussianVoices();
+      setAvailableVoices(voices);
+    };
+
+    // Обновляем голоса сразу
+    updateVoices();
+
+    // Слушаем событие загрузки голосов
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, [isOpen]);
 
   const handleSaveSettings = () => {
     toast.success('Настройки сохранены!');
     setIsOpen(false);
+  };
+
+  const testVoice = () => {
+    if (!selectedVoice) {
+      toast.error('Сначала выберите голос');
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance('Привет! Это тестирование выбранного голоса.');
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.voiceURI === selectedVoice);
+    
+    if (voice) {
+      utterance.voice = voice;
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
+      toast.success('Воспроизведение тестовой фразы...');
+    } else {
+      toast.error('Выбранный голос не найден');
+    }
   };
 
   return (
@@ -70,28 +113,44 @@ export function SettingsDialog() {
             <Label htmlFor="voice-select" className="text-foreground">
               Голос для озвучивания
             </Label>
-            <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-              <SelectTrigger className="bg-background border-border text-foreground">
-                <SelectValue placeholder="Выберите голос..." />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                {availableVoices.length > 0 ? (
-                  availableVoices.map((voice) => (
-                    <SelectItem 
-                      key={voice.voiceURI} 
-                      value={voice.voiceURI}
-                      className="text-foreground hover:bg-accent/20"
-                    >
-                      {voice.name} ({voice.lang})
+            <div className="flex gap-2">
+              <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                <SelectTrigger className="bg-background border-border text-foreground flex-1">
+                  <SelectValue placeholder="Выберите голос..." />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                  {availableVoices.length > 0 ? (
+                    availableVoices.map((voice) => (
+                      <SelectItem 
+                        key={voice.voiceURI} 
+                        value={voice.voiceURI}
+                        className="text-foreground hover:bg-accent/20"
+                      >
+                        {voice.name} ({voice.lang})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="default" className="text-muted-foreground">
+                      Русские голоса не найдены
                     </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="default" className="text-muted-foreground">
-                    Русские голоса не найдены
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+                  )}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={testVoice}
+                disabled={!selectedVoice}
+                className="border-border hover:border-accent text-foreground px-3"
+              >
+                Тест
+              </Button>
+            </div>
+            {availableVoices.length === 0 && (
+              <p className="text-xs text-yellow-400">
+                Голоса загружаются... Если проблема не решается, перезагрузите страницу.
+              </p>
+            )}
           </div>
 
           {/* Системный промпт */}
