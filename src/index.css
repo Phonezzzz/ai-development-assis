@@ -8,29 +8,29 @@
 }
 
 :root {
-  /* Dark theme with purple accents - Perplexity-inspired */
+  /* Dark theme with transparent green accents */
   --background: #000000;
-  --foreground: oklch(0.9 0.05 280);
+  --foreground: oklch(0.9 0.05 160);
 
-  --card: #000000;
-  --card-foreground: oklch(0.9 0.05 280);
-  --popover: #000000;
-  --popover-foreground: oklch(0.9 0.05 280);
+  --card: rgba(0, 0, 0, 0.6);
+  --card-foreground: oklch(0.9 0.05 160);
+  --popover: rgba(0, 0, 0, 0.8);
+  --popover-foreground: oklch(0.9 0.05 160);
 
-  --primary: oklch(0.45 0.15 285);
+  --primary: rgba(34, 197, 94, 0.7);
   --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.35 0.08 250);
-  --secondary-foreground: oklch(0.9 0.05 280);
-  --accent: oklch(0.65 0.25 285);
+  --secondary: rgba(22, 163, 74, 0.5);
+  --secondary-foreground: oklch(0.9 0.05 160);
+  --accent: rgba(34, 197, 94, 0.8);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.6 0.3 15);
   --destructive-foreground: oklch(0.98 0 0);
 
-  --muted: oklch(0.2 0.03 240);
-  --muted-foreground: oklch(0.7 0.05 270);
-  --border: oklch(0.3 0.05 245);
-  --input: oklch(0.3 0.05 245);
-  --ring: oklch(0.65 0.25 285);
+  --muted: rgba(15, 23, 42, 0.6);
+  --muted-foreground: oklch(0.7 0.05 160);
+  --border: rgba(34, 197, 94, 0.3);
+  --input: rgba(34, 197, 94, 0.3);
+  --ring: rgba(34, 197, 94, 0.8);
 
   --radius: 0.75rem;
 }
@@ -235,7 +235,7 @@
 
 .drop-zone.drag-over {
   border-color: var(--accent);
-  background: oklch(0.65 0.25 285 / 0.1);
+  background: rgba(34, 197, 94, 0.1);
 }
 
 /* Scrollbar styles for dark theme */

@@ -378,9 +378,9 @@ function App() {
         position="bottom-right"
         toastOptions={{
           style: {
-            background: 'rgba(39, 39, 42, 0.9)',
-            color: 'oklch(0.9 0.05 280)',
-            border: '1px solid oklch(0.3 0.05 245)',
+            background: 'rgba(0, 0, 0, 0.9)',
+            color: 'oklch(0.9 0.05 160)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
             backdropFilter: 'blur(8px)',
           },
         }}
