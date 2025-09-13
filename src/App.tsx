@@ -90,62 +90,84 @@ function App() {
 
     try {
       if (mode === 'plan') {
-        // Plan mode - create plan and ask for confirmation
-        const plan = await createPlan(text);
-        
-        const plannerResponse = createMessage(
-          `Я создал подробный план для вашего запроса. План включает ${plan.steps.length} шагов:\n\n${plan.steps.map((step, i) => `${i + 1}. ${step.description}`).join('\n')}\n\nВы хотите выполнить этот план? Скажите "да" чтобы продолжить или "нет" чтобы изменить план.`,
-          'agent',
-          'planner'
-        );
-
-        setMessages((prev) => [...(prev || []), plannerResponse]);
-        setAwaitingConfirmation(true);
-        
-        // Store planner response in vector database
-        try {
-          await vectorService.addDocument({
-            id: plannerResponse.id,
-            content: plannerResponse.content,
-            metadata: {
-              type: 'agent_message',
-              agentType: 'planner',
-              timestamp: plannerResponse.timestamp.toISOString(),
-              isVoice: isVoice || false,
-            },
-          });
-        } catch (error) {
-          console.error('Error storing agent message in vector DB:', error);
-        }
-        
-        if (isVoice) {
-          speak(plannerResponse.content);
-        }
-        
-        toast.success('План создан успешно');
-      } else if (mode === 'act') {
-        // Act mode - execute directly or confirm pending plan
+        // ПЛАН режим - НИКАКИХ действий, только планирование и запрос подтверждения
         if (awaitingConfirmation && currentPlan) {
-          if (text.toLowerCase().includes('да') || text.toLowerCase().includes('yes')) {
+          // Уже есть план в ожидании - обрабатываем ответ пользователя
+          if (text.toLowerCase().includes('да') || text.toLowerCase().includes('подтверждаю') || text.toLowerCase().includes('ок') || text.toLowerCase().includes('yes')) {
             handleConfirmPlan();
-            const agentMessages = await executePlan();
-            setMessages((prev) => [...(prev || []), ...agentMessages]);
-            setAwaitingConfirmation(false);
-          } else {
-            const response = createMessage(
-              'Хорошо, давайте изменим план. Опишите что именно вы хотели бы изменить.',
+            const confirmationResponse = createMessage(
+              'План подтверждён! Перейдите в режим "Действие" чтобы начать выполнение или дайте команду в режиме "Действие".',
               'agent',
               'planner'
             );
-            setMessages((prev) => [...(prev || []), response]);
-            if (isVoice) speak(response.content);
+            setMessages((prev) => [...(prev || []), confirmationResponse]);
             setAwaitingConfirmation(false);
+            
+            if (isVoice) {
+              speak(confirmationResponse.content);
+            }
+            
+            toast.success('План подтверждён! Готов к выполнению.');
+          } else {
+            // Пользователь хочет изменить план
+            setAwaitingConfirmation(false);
+            const plan = await createPlan(text);
+            
+            const plannerResponse = createMessage(
+              `Я обновил план согласно вашим пожеланиям. Новый план включает ${plan.steps.length} шагов:\n\n${plan.steps.map((step, i) => `${i + 1}. ${step.description}`).join('\n')}\n\nВсё правильно? Подтверждаете план? (Скажите "да" для подтверждения)`,
+              'agent',
+              'planner'
+            );
+
+            setMessages((prev) => [...(prev || []), plannerResponse]);
+            setAwaitingConfirmation(true);
+            
+            if (isVoice) {
+              speak(plannerResponse.content);
+            }
+            
+            toast.success('План обновлён');
           }
         } else {
-          // Direct execution - create plan and execute immediately
+          // Создаём новый план
           const plan = await createPlan(text);
-          confirmPlan();
           
+          const plannerResponse = createMessage(
+            `✅ План создан:\n\n📋 **${plan.title}**\n${plan.description}\n\n**Шаги выполнения:**\n${plan.steps.map((step, i) => `${i + 1}. ${step.description} (${step.agentType})`).join('\n')}\n\n⚠️ **Внимание**: Это только план! Никаких действий не предпринимается.\n\n❓ **Подтверждаете план?** Скажите "да" для подтверждения или объясните что нужно изменить.`,
+            'agent',
+            'planner'
+          );
+
+          setMessages((prev) => [...(prev || []), plannerResponse]);
+          setAwaitingConfirmation(true);
+          
+          // Store planner response in vector database
+          try {
+            await vectorService.addDocument({
+              id: plannerResponse.id,
+              content: plannerResponse.content,
+              metadata: {
+                type: 'agent_message',
+                agentType: 'planner',
+                timestamp: plannerResponse.timestamp.toISOString(),
+                isVoice: isVoice || false,
+              },
+            });
+          } catch (error) {
+            console.error('Error storing agent message in vector DB:', error);
+          }
+          
+          if (isVoice) {
+            speak(plannerResponse.content);
+          }
+          
+          toast.success('План создан - ожидает подтверждения');
+        }
+        
+      } else if (mode === 'act') {
+        // ДЕЙСТВИЕ режим - выполняем план или создаём и сразу выполняем
+        if (currentPlan && currentPlan.status === 'confirmed') {
+          // Есть подтверждённый план - выполняем его
           const agentMessages = await executePlan();
           setMessages((prev) => [...(prev || []), ...agentMessages]);
           
@@ -155,10 +177,33 @@ function App() {
             }, index * 1000);
           });
           
+          toast.success('План выполнен!');
+        } else {
+          // Нет подтверждённого плана - создаём и сразу выполняем
+          const executionStart = createMessage(
+            'Создаю план и сразу выполняю задачу...',
+            'agent',
+            'planner'
+          );
+          setMessages((prev) => [...(prev || []), executionStart]);
+          
+          const plan = await createPlan(text);
+          confirmPlan();
+          
+          const agentMessages = await executePlan();
+          setMessages((prev) => [...(prev || []), ...agentMessages]);
+          
+          agentMessages.forEach((message, index) => {
+            setTimeout(() => {
+              speak(message.content);
+            }, index * 1500);
+          });
+          
           toast.success('Задача выполнена!');
         }
+        
       } else if (mode === 'ask') {
-        // Ask mode - direct LLM question answering
+        // ASK режим - прямой вопрос к ИИ без планирования
         const llmResponse = await llmService.askQuestion(text);
         
         const assistantMessage = createMessage(
@@ -196,7 +241,7 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [setMessages, createPlan, speak, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan]);
+  }, [setMessages, createPlan, speak, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan, addMessageToContext]);
 
   const handleConfirmPlan = useCallback(() => {
     confirmPlan();

@@ -141,15 +141,17 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
   return (
     <div className="chat-mode-container">
       <div className="chat-messages-area">
-        <ScrollArea className="h-full p-4 chat-scroll-area">
+        <ScrollArea className="h-full chat-scroll-area">
           {messages.length === 0 ? (
-            <Card className="p-8 text-center">
-              <div className="text-4xl mb-4">💬</div>
-              <h3 className="font-semibold text-lg mb-2">Начните беседу</h3>
-              <p className="text-muted-foreground">
-                Общайтесь с системой ИИ агентов. Вы можете использовать голосовой ввод или печатать сообщения.
-              </p>
-            </Card>
+            <div className="p-8">
+              <Card className="p-8 text-center">
+                <div className="text-4xl mb-4">💬</div>
+                <h3 className="font-semibold text-lg mb-2">Начните беседу</h3>
+                <p className="text-muted-foreground">
+                  Общайтесь с системой ИИ агентов. Вы можете использовать голосовой ввод или печатать сообщения.
+                </p>
+              </Card>
+            </div>
           ) : (
             <div className="messages-container">
               <div className="messages-list">
@@ -311,10 +313,10 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                 <AnimatePresence>
                   {isProcessing && <TypingIndicator />}
                 </AnimatePresence>
-                
-                {/* Auto-scroll anchor */}
-                <div ref={messagesEndRef} />
               </div>
+              
+              {/* Auto-scroll anchor */}
+              <div ref={messagesEndRef} className="auto-scroll-anchor" />
             </div>
           )}
         </ScrollArea>

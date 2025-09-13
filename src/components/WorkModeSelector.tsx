@@ -14,9 +14,24 @@ import {
 import { WorkMode } from '@/lib/types';
 
 const WORK_MODES = [
-  { id: 'plan', name: 'План', icon: Brain, description: 'Создание детального плана' },
-  { id: 'act', name: 'Действие', icon: Lightning, description: 'Выполнение задач' },
-  { id: 'ask', name: 'Вопрос', icon: ChatCircle, description: 'Простой вопрос к ИИ' },
+  { 
+    id: 'plan', 
+    name: 'План', 
+    icon: Brain, 
+    description: 'Создаёт детальный план без выполнения. Запрашивает подтверждение пользователя.' 
+  },
+  { 
+    id: 'act', 
+    name: 'Действие', 
+    icon: Lightning, 
+    description: 'Выполняет задачи по подтверждённому плану или создаёт план и сразу исполняет.' 
+  },
+  { 
+    id: 'ask', 
+    name: 'Вопрос', 
+    icon: ChatCircle, 
+    description: 'Простой вопрос к ИИ без планирования и агентов.' 
+  },
 ];
 
 interface WorkModeSelectorProps {
