@@ -99,13 +99,19 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
 
   const toggleVoiceRecognition = useCallback(async () => {
     console.log('=== STT TOGGLE CLICKED ===');
+    console.log('Кнопка STT нажата!');
     console.log('isSupported:', isSupported);
     console.log('voiceState:', voiceState);
-    console.log('SpeechRecognition available:', !!(window as any).SpeechRecognition);
-    console.log('webkitSpeechRecognition available:', !!(window as any).webkitSpeechRecognition);
+    console.log('window.SpeechRecognition:', !!(window as any).SpeechRecognition);
+    console.log('window.webkitSpeechRecognition:', !!(window as any).webkitSpeechRecognition);
+    console.log('navigator.mediaDevices:', !!navigator.mediaDevices);
+    console.log('navigator.mediaDevices.getUserMedia:', !!navigator.mediaDevices?.getUserMedia);
+    
+    alert(`Кнопка STT нажата! Поддержка: ${isSupported ? 'Да' : 'Нет'}`);
     
     if (!isSupported) {
       console.warn('Speech recognition not supported');
+      alert('Распознавание речи не поддерживается в этом браузере.\nТребуется Chrome, Edge или Safari.');
       return;
     }
 
@@ -119,6 +125,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         console.log('startListening() completed');
       } catch (error) {
         console.error('Error in startListening:', error);
+        alert(`Ошибка запуска STT: ${error}`);
       }
     }
   }, [voiceState.isListening, isSupported, startListening, stopListening]);
@@ -309,12 +316,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               type="button"
               variant="ghost"
               size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('STT button clicked - calling toggleVoiceRecognition');
-                toggleVoiceRecognition();
-              }}
+              onClick={toggleVoiceRecognition}
               className={cn(
                 "h-7 w-7 p-0 transition-all duration-200 border border-transparent",
                 "hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]",
@@ -403,6 +405,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
             MediaDevices: {navigator.mediaDevices ? '✅' : '❌'} |
             getUserMedia: {typeof navigator.mediaDevices?.getUserMedia === 'function' ? '✅' : '❌'} |
             Состояние: {voiceState.isListening ? 'Слушаю' : 'Ожидание'} |
+            Кнопка: {!isSupported ? 'Заблокирована' : 'Активна'} |
             Транскрипт: "{voiceState.transcript}"
           </div>
         )}

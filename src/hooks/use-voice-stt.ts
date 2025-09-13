@@ -12,38 +12,44 @@ export function useVoiceSTT() {
   const recognitionRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
 
+  // Проверяем поддержку Speech Recognition API
+  const isSupported = Boolean(
+    typeof window !== 'undefined' && 
+    ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) &&
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia
+  );
+
   // Инициализация Speech Recognition
   useEffect(() => {
-    if (isInitializedRef.current) return;
+    if (isInitializedRef.current || !isSupported) return;
     
     try {
-      if (typeof window !== 'undefined') {
-        console.log('STT: Инициализация распознавания речи...');
+      console.log('STT: Инициализация распознавания речи...');
+      
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (SpeechRecognition) {
+        console.log('STT: API распознавания речи найден');
+        const recognition = new SpeechRecognition();
         
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        // Настройки
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'ru-RU';
+        recognition.maxAlternatives = 1;
         
-        if (SpeechRecognition) {
-          console.log('STT: API распознавания речи найден');
-          const recognition = new SpeechRecognition();
-          
-          // Настройки
-          recognition.continuous = false;
-          recognition.interimResults = true;
-          recognition.lang = 'ru-RU';
-          recognition.maxAlternatives = 1;
-          
-          recognitionRef.current = recognition;
-          isInitializedRef.current = true;
-          
-          console.log('STT: Инициализация завершена');
-        } else {
-          console.warn('STT: API распознавания речи не поддерживается в этом браузере');
-        }
+        recognitionRef.current = recognition;
+        isInitializedRef.current = true;
+        
+        console.log('STT: Инициализация завершена');
+      } else {
+        console.warn('STT: API распознавания речи не поддерживается в этом браузере');
       }
     } catch (error) {
       console.error('STT: Ошибка инициализации:', error);
     }
-  }, []);
+  }, [isSupported]);
 
   const startListening = useCallback(async () => {
     console.log('STT: Попытка запуска распознавания...');
@@ -188,13 +194,6 @@ export function useVoiceSTT() {
       }
     }
   }, []);
-
-  const isSupported = Boolean(
-    typeof window !== 'undefined' && 
-    ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) &&
-    navigator.mediaDevices &&
-    navigator.mediaDevices.getUserMedia
-  );
 
   return {
     voiceState,
