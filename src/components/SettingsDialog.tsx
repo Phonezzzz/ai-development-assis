@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useKV } from '@github/spark/hooks';
 import {
   Dialog,
@@ -12,83 +12,40 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Gear } from '@phosphor-icons/react';
+import { Gear, Play, Stop } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-
-interface VoiceOption {
-  name: string;
-  lang: string;
-  voiceURI: string;
-}
+import { useTTS, ELEVENLABS_VOICES } from '@/hooks/use-tts';
 
 export function SettingsDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', '');
+  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'pNInz6obpgDQGcFmaJgB');
   const [systemPrompt, setSystemPrompt] = useKV<string>('system-prompt', 
     'Вы - умный помощник, который отвечает на русском языке. Будьте полезными, точными и дружелюбными.'
   );
-  const [availableVoices, setAvailableVoices] = useState<VoiceOption[]>([]);
-
-  // Получаем доступные русские голоса
-  const getRussianVoices = (): VoiceOption[] => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return [];
-    
-    const voices = window.speechSynthesis.getVoices();
-    return voices
-      .filter(voice => voice.lang.startsWith('ru'))
-      .map(voice => ({
-        name: voice.name,
-        lang: voice.lang,
-        voiceURI: voice.voiceURI
-      }));
-  };
-
-  // Загружаем голоса при открытии диалога и обновляем их
-  useEffect(() => {
-    const updateVoices = () => {
-      const voices = getRussianVoices();
-      setAvailableVoices(voices);
-    };
-
-    // Обновляем голоса сразу
-    updateVoices();
-
-    // Слушаем событие загрузки голосов
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = updateVoices;
-    }
-
-    return () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = null;
-      }
-    };
-  }, [isOpen]);
+  
+  const { speak, stop, ttsState, isAvailable } = useTTS();
 
   const handleSaveSettings = () => {
     toast.success('Настройки сохранены!');
     setIsOpen(false);
   };
 
-  const testVoice = () => {
+  const testVoice = async () => {
     if (!selectedVoice) {
       toast.error('Сначала выберите голос');
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance('Привет! Это тестирование выбранного голоса.');
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.voiceURI === selectedVoice);
-    
-    if (voice) {
-      utterance.voice = voice;
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      window.speechSynthesis.speak(utterance);
+    if (ttsState.isPlaying) {
+      stop();
+      return;
+    }
+
+    try {
+      await speak('Привет! Это тестирование выбранного голоса ElevenLabs.');
       toast.success('Воспроизведение тестовой фразы...');
-    } else {
-      toast.error('Выбранный голос не найден');
+    } catch (error) {
+      toast.error('Ошибка при тестировании голоса');
     }
   };
 
@@ -111,7 +68,7 @@ export function SettingsDialog() {
           {/* Выбор голоса */}
           <div className="space-y-2">
             <Label htmlFor="voice-select" className="text-foreground">
-              Голос для озвучивания
+              Голос ElevenLabs для озвучивания
             </Label>
             <div className="flex gap-2">
               <Select value={selectedVoice} onValueChange={setSelectedVoice}>
@@ -119,36 +76,44 @@ export function SettingsDialog() {
                   <SelectValue placeholder="Выберите голос..." />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
-                  {availableVoices.length > 0 ? (
-                    availableVoices.map((voice) => (
-                      <SelectItem 
-                        key={voice.voiceURI} 
-                        value={voice.voiceURI}
-                        className="text-foreground hover:bg-accent/20"
-                      >
-                        {voice.name} ({voice.lang})
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="default" className="text-muted-foreground">
-                      Русские голоса не найдены
+                  {ELEVENLABS_VOICES.map((voice) => (
+                    <SelectItem 
+                      key={voice.id} 
+                      value={voice.id}
+                      className="text-foreground hover:bg-accent/20"
+                    >
+                      {voice.name}
                     </SelectItem>
-                  )}
+                  ))}
                 </SelectContent>
               </Select>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={testVoice}
-                disabled={!selectedVoice}
+                disabled={!selectedVoice || !isAvailable()}
                 className="border-border hover:border-accent text-foreground px-3"
               >
-                Тест
+                {ttsState.isPlaying ? (
+                  <Stop size={16} />
+                ) : (
+                  <Play size={16} />
+                )}
               </Button>
             </div>
-            {availableVoices.length === 0 && (
+            {!isAvailable() && (
               <p className="text-xs text-yellow-400">
-                Голоса загружаются... Если проблема не решается, перезагрузите страницу.
+                ElevenLabs API ключ не настроен. Добавьте VITE_ELEVENLABS_API_KEY в переменные окружения.
+              </p>
+            )}
+            {ttsState.isLoading && (
+              <p className="text-xs text-blue-400">
+                Генерация аудио...
+              </p>
+            )}
+            {ttsState.error && (
+              <p className="text-xs text-red-400">
+                Ошибка: {ttsState.error}
               </p>
             )}
           </div>

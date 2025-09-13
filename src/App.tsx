@@ -33,7 +33,7 @@ function App() {
   // Memoize agent system and voice recognition to prevent unnecessary re-renders
   const agentSystem = useAgentSystem();
   const voiceRecognition = useVoiceRecognition();
-  const { speak: ttsSpeak } = useTTS();
+  const { speak: ttsSpeak, stop: ttsStop } = useTTS();
   const { addMessageToContext } = useSmartContext();
 
   const {
