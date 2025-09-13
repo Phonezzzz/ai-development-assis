@@ -227,9 +227,9 @@ function App() {
   };
 
   return (
-    <div className="h-screen text-foreground flex flex-col relative bg-transparent">
+    <div className="h-screen w-screen text-foreground flex flex-col relative bg-transparent overflow-hidden">
       {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-sm p-4 relative z-10">
+      <header className="border-b bg-card/80 backdrop-blur-sm p-4 relative z-10 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="text-2xl">🤖</div>
@@ -249,10 +249,10 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-80 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10">
-          <div className="p-4 space-y-4">
+        <aside className="w-80 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10 flex-shrink-0">
+          <div className="p-4 space-y-4 flex-1 overflow-y-auto">
             <ApiConfigurationWarning />
             
             <ChatHistory
@@ -285,7 +285,7 @@ function App() {
         </aside>
 
         {/* Main View */}
-        <main className="flex-1 min-w-0 bg-transparent relative z-10">
+        <main className="flex-1 min-w-0 bg-transparent relative z-10 overflow-hidden">
           {renderMode()}
         </main>
       </div>

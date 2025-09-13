@@ -9,7 +9,7 @@ import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
 import { ttsService } from '@/lib/services/tts';
 import { SpeakerHigh, Copy, Check } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 interface ChatModeProps {
@@ -22,6 +22,12 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
   const { speak } = useVoiceRecognition();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const getAgentInfo = (agentType: AgentType) => {
     const agentMap = {
@@ -68,7 +74,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-screen">
       <ScrollArea className="flex-1 p-4">
         {messages.length === 0 ? (
           <Card className="p-8 text-center">
@@ -183,11 +189,13 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                 )}
               </div>
             ))}
+            {/* Auto-scroll anchor */}
+            <div ref={messagesEndRef} />
           </div>
         )}
       </ScrollArea>
 
-      <div className="p-4 border-t bg-background">
+      <div className="p-4 border-t bg-card/80 backdrop-blur-sm flex-shrink-0">
         <ModernChatInput
           onSubmit={onSendMessage}
           placeholder="Задайте вопрос агентам..."
