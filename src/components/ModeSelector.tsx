@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { OperatingMode } from '@/lib/types';
-import { MessageCircle, Image, Code, Settings } from '@phosphor-icons/react';
+import { ChatCircle, Images, Code } from '@phosphor-icons/react';
 
 interface ModeSelectorProps {
   currentMode: OperatingMode;
@@ -13,13 +13,13 @@ export function ModeSelector({ currentMode, onModeChange }: ModeSelectorProps) {
     {
       id: 'chat' as const,
       label: 'Чат',
-      icon: MessageCircle,
+      icon: ChatCircle,
       description: 'Беседа с ИИ агентами',
     },
     {
       id: 'image-creator' as const,
       label: 'Создание изображений',
-      icon: Image,
+      icon: Images,
       description: 'Генерация и редактирование изображений',
     },
     {

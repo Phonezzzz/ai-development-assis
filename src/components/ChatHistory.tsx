@@ -31,7 +31,7 @@ export function ChatHistory({ messages, onClearHistory }: ChatHistoryProps) {
     timestamp: new Date(),
   };
 
-  const allSessions = [currentSession, ...chatSessions].filter(session => 
+  const allSessions = [currentSession, ...(chatSessions || [])].filter(session => 
     session.messages.length > 0
   );
 
