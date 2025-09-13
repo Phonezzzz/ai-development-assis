@@ -212,15 +212,27 @@ function App() {
       case 'chat':
         return (
           <ChatMode
-            messages={messages}
+            messages={messages || []}
             onSendMessage={handleSendMessage}
             isProcessing={isProcessing}
           />
         );
       case 'image-creator':
-        return <ImageCreatorMode />;
+        return (
+          <ImageCreatorMode
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isProcessing={isProcessing}
+          />
+        );
       case 'workspace':
-        return <WorkspaceMode />;
+        return (
+          <WorkspaceMode
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isProcessing={isProcessing}
+          />
+        );
       default:
         return null;
     }
@@ -242,7 +254,7 @@ function App() {
           </div>
           
           <ModeSelector
-            currentMode={currentMode}
+            currentMode={currentMode || 'chat'}
             onModeChange={setCurrentMode}
           />
         </div>

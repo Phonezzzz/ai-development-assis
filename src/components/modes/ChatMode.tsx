@@ -139,184 +139,188 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
   };
 
   return (
-    <div className="flex flex-col h-full max-h-screen">
-      <ScrollArea className="flex-1 p-4 chat-scroll-area">
-        {messages.length === 0 ? (
-          <Card className="p-8 text-center">
-            <div className="text-4xl mb-4">💬</div>
-            <h3 className="font-semibold text-lg mb-2">Начните беседу</h3>
-            <p className="text-muted-foreground">
-              Общайтесь с системой ИИ агентов. Вы можете использовать голосовой ввод или печатать сообщения.
-            </p>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            <AnimatePresence initial={false}>
-              {messages.map((message, index) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ 
-                    opacity: 0, 
-                    y: 20,
-                    scale: 0.95
-                  }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    scale: 1
-                  }}
-                  exit={{ 
-                    opacity: 0, 
-                    y: -10,
-                    scale: 0.95
-                  }}
-                  transition={{
-                    duration: 0.3,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                    delay: index === messages.length - 1 ? 0.1 : 0
-                  }}
-                  className={cn(
-                    "flex gap-3",
-                    message.type === 'user' ? "justify-end" : "justify-start"
-                  )}
-                >
-                {message.type === 'agent' && (
-                  <Avatar className="w-8 h-8 bg-card border">
-                    <div className="text-lg">
-                      {getAgentInfo(message.agentType!).avatar}
-                    </div>
-                  </Avatar>
-                )}
-
-                <div
-                  className={cn(
-                    "max-w-[70%] space-y-1",
-                    message.type === 'user' ? "items-end" : "items-start"
-                  )}
-                >
-                  {message.type === 'agent' && (
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant="secondary" 
-                        className={cn("text-xs", getAgentInfo(message.agentType!).color, "text-white")}
-                      >
-                        {getAgentInfo(message.agentType!).name}
-                      </Badge>
-                      {message.isVoice && (
-                        <Badge variant="outline" className="text-xs">
-                          Голос
-                        </Badge>
+    <div className="chat-mode-container">
+      <div className="chat-messages-area">
+        <ScrollArea className="h-full p-4 chat-scroll-area">
+          {messages.length === 0 ? (
+            <Card className="p-8 text-center">
+              <div className="text-4xl mb-4">💬</div>
+              <h3 className="font-semibold text-lg mb-2">Начните беседу</h3>
+              <p className="text-muted-foreground">
+                Общайтесь с системой ИИ агентов. Вы можете использовать голосовой ввод или печатать сообщения.
+              </p>
+            </Card>
+          ) : (
+            <div className="messages-container">
+              <div className="messages-list">
+                <AnimatePresence initial={false}>
+                  {messages.map((message, index) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ 
+                        opacity: 0, 
+                        y: 20,
+                        scale: 0.95
+                      }}
+                      animate={{ 
+                        opacity: 1, 
+                        y: 0,
+                        scale: 1
+                      }}
+                      exit={{ 
+                        opacity: 0, 
+                        y: -10,
+                        scale: 0.95
+                      }}
+                      transition={{
+                        duration: 0.3,
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                        delay: index === messages.length - 1 ? 0.1 : 0
+                      }}
+                      className={cn(
+                        "flex gap-3",
+                        message.type === 'user' ? "justify-end" : "justify-start"
                       )}
-                    </div>
-                  )}
-
-                  <Card
-                    className={cn(
-                      "p-3",
-                      message.type === 'user' 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-card"
+                    >
+                    {message.type === 'agent' && (
+                      <Avatar className="w-8 h-8 bg-card border">
+                        <div className="text-lg">
+                          {getAgentInfo(message.agentType!).avatar}
+                        </div>
+                      </Avatar>
                     )}
-                  >
-                    <div className="mb-2">
-                      {message.content.includes('```') ? (
-                        <pre className="syntax-highlight whitespace-pre-wrap overflow-x-auto">
-                          {message.content}
-                        </pre>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{message.content}</p>
+
+                    <div
+                      className={cn(
+                        "max-w-[70%] space-y-1",
+                        message.type === 'user' ? "items-end" : "items-start"
                       )}
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs opacity-70">
-                        {formatTimestamp(message.timestamp)}
-                      </div>
-                      
+                    >
                       {message.type === 'agent' && (
-                        <motion.div 
-                          className="flex gap-1"
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.2 }}
-                        >
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant="secondary" 
+                            className={cn("text-xs", getAgentInfo(message.agentType!).color, "text-white")}
                           >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyMessage(message.content, message.id)}
-                              className="h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200"
-                              title="Скопировать сообщение"
-                            >
-                              {copiedMessageId === message.id ? (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                >
-                                  <Check size={12} className="text-green-500" />
-                                </motion.div>
-                              ) : (
-                                <Copy size={12} />
-                              )}
-                            </Button>
-                          </motion.div>
+                            {getAgentInfo(message.agentType!).name}
+                          </Badge>
+                          {message.isVoice && (
+                            <Badge variant="outline" className="text-xs">
+                              Голос
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                      <Card
+                        className={cn(
+                          "p-3",
+                          message.type === 'user' 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-card"
+                        )}
+                      >
+                        <div className="mb-2">
+                          {message.content.includes('```') ? (
+                            <pre className="syntax-highlight whitespace-pre-wrap overflow-x-auto">
+                              {message.content}
+                            </pre>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{message.content}</p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs opacity-70">
+                            {formatTimestamp(message.timestamp)}
+                          </div>
                           
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => speakMessage(message.content, message.id)}
-                              disabled={speakingMessageId === message.id}
-                              className={cn(
-                                "h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200",
-                                speakingMessageId === message.id && "opacity-100 text-accent"
-                              )}
-                              title="Воспроизвести сообщение"
+                          {message.type === 'agent' && (
+                            <motion.div 
+                              className="flex gap-1"
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.2 }}
                             >
                               <motion.div
-                                animate={speakingMessageId === message.id ? {
-                                  scale: [1, 1.2, 1],
-                                  transition: { repeat: Infinity, duration: 1 }
-                                } : {}}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
                               >
-                                <SpeakerHigh size={12} />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyMessage(message.content, message.id)}
+                                  className="h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200"
+                                  title="Скопировать сообщение"
+                                >
+                                  {copiedMessageId === message.id ? (
+                                    <motion.div
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    >
+                                      <Check size={12} className="text-green-500" />
+                                    </motion.div>
+                                  ) : (
+                                    <Copy size={12} />
+                                  )}
+                                </Button>
                               </motion.div>
-                            </Button>
-                          </motion.div>
-                        </motion.div>
-                      )}
+                              
+                              <motion.div
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => speakMessage(message.content, message.id)}
+                                  disabled={speakingMessageId === message.id}
+                                  className={cn(
+                                    "h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200",
+                                    speakingMessageId === message.id && "opacity-100 text-accent"
+                                  )}
+                                  title="Воспроизвести сообщение"
+                                >
+                                  <motion.div
+                                    animate={speakingMessageId === message.id ? {
+                                      scale: [1, 1.2, 1],
+                                      transition: { repeat: Infinity, duration: 1 }
+                                    } : {}}
+                                  >
+                                    <SpeakerHigh size={12} />
+                                  </motion.div>
+                                </Button>
+                              </motion.div>
+                            </motion.div>
+                          )}
+                        </div>
+                      </Card>
                     </div>
-                  </Card>
-                </div>
 
-                {message.type === 'user' && (
-                  <Avatar className="w-8 h-8 bg-primary text-primary-foreground">
-                    <div className="text-sm font-semibold">П</div>
-                  </Avatar>
-                )}
-              </motion.div>
-            ))}
-            </AnimatePresence>
-            
-            {/* Показать индикатор печати когда ИИ обрабатывает запрос */}
-            <AnimatePresence>
-              {isProcessing && <TypingIndicator />}
-            </AnimatePresence>
-            
-            {/* Auto-scroll anchor */}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </ScrollArea>
+                    {message.type === 'user' && (
+                      <Avatar className="w-8 h-8 bg-primary text-primary-foreground">
+                        <div className="text-sm font-semibold">П</div>
+                      </Avatar>
+                    )}
+                  </motion.div>
+                ))}
+                </AnimatePresence>
+                
+                {/* Показать индикатор печати когда ИИ обрабатывает запрос */}
+                <AnimatePresence>
+                  {isProcessing && <TypingIndicator />}
+                </AnimatePresence>
+                
+                {/* Auto-scroll anchor */}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+          )}
+        </ScrollArea>
+      </div>
 
-      <div className="p-4 border-t bg-card/80 backdrop-blur-sm flex-shrink-0">
+      <div className="chat-input-area p-4">
         <ModernChatInput
           onSubmit={onSendMessage}
           placeholder="Задайте вопрос агентам..."
