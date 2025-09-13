@@ -4,11 +4,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ModernChatInput } from '@/components/ModernChatInput';
+import { TTSControls } from '@/components/TTSControls';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
-import { ttsService } from '@/lib/services/tts';
-import { SpeakerHigh, Copy, Check } from '@phosphor-icons/react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -21,8 +20,6 @@ interface ChatModeProps {
 
 export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProps) {
   const { speak } = useVoiceRecognition();
-  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -102,40 +99,6 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
       'error-fixer': { name: 'Отладчик', avatar: '🔧', color: 'bg-red-500' },
     };
     return agentMap[agentType] || { name: 'Ассистент', avatar: '🤖', color: 'bg-gray-500' };
-  };
-
-  const speakMessage = async (text: string, messageId: string) => {
-    try {
-      setSpeakingMessageId(messageId);
-      await ttsService.speak(text);
-      toast.success('Сообщение воспроизведено');
-    } catch (error) {
-      console.error('TTS Error:', error);
-      // Fallback to browser speech
-      try {
-        await speak(text);
-      } catch (fallbackError) {
-        toast.error('Ошибка воспроизведения речи');
-      }
-    } finally {
-      setSpeakingMessageId(null);
-    }
-  };
-
-  const copyMessage = async (text: string, messageId: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedMessageId(messageId);
-      toast.success('Сообщение скопировано');
-      
-      // Reset copy indicator after 2 seconds
-      setTimeout(() => {
-        setCopiedMessageId(null);
-      }, 2000);
-    } catch (error) {
-      console.error('Copy Error:', error);
-      toast.error('Ошибка копирования');
-    }
   };
 
   return (
@@ -238,63 +201,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                           </div>
                           
                           {message.type === 'agent' && (
-                            <motion.div 
-                              className="flex gap-1"
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.2 }}
-                            >
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyMessage(message.content, message.id)}
-                                  className="h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200"
-                                  title="Скопировать сообщение"
-                                >
-                                  {copiedMessageId === message.id ? (
-                                    <motion.div
-                                      initial={{ scale: 0 }}
-                                      animate={{ scale: 1 }}
-                                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                    >
-                                      <Check size={12} className="text-green-500" />
-                                    </motion.div>
-                                  ) : (
-                                    <Copy size={12} />
-                                  )}
-                                </Button>
-                              </motion.div>
-                              
-                              <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => speakMessage(message.content, message.id)}
-                                  disabled={speakingMessageId === message.id}
-                                  className={cn(
-                                    "h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200",
-                                    speakingMessageId === message.id && "opacity-100 text-accent"
-                                  )}
-                                  title="Воспроизвести сообщение"
-                                >
-                                  <motion.div
-                                    animate={speakingMessageId === message.id ? {
-                                      scale: [1, 1.2, 1],
-                                      transition: { repeat: Infinity, duration: 1 }
-                                    } : {}}
-                                  >
-                                    <SpeakerHigh size={12} />
-                                  </motion.div>
-                                </Button>
-                              </motion.div>
-                            </motion.div>
+                            <TTSControls text={message.content} />
                           )}
                         </div>
                       </Card>

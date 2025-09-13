@@ -12,6 +12,7 @@ import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
 import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
 import { useAgentSystem } from '@/hooks/use-agent-system';
 import { useVoiceRecognition } from '@/hooks/use-voice';
+import { useTTS } from '@/hooks/use-tts';
 import { useSmartContext } from '@/hooks/use-smart-context';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
 import { vectorService } from '@/lib/services/vector';
@@ -32,6 +33,7 @@ function App() {
   // Memoize agent system and voice recognition to prevent unnecessary re-renders
   const agentSystem = useAgentSystem();
   const voiceRecognition = useVoiceRecognition();
+  const { speak: ttsSpeak } = useTTS();
   const { addMessageToContext } = useSmartContext();
 
   const {
@@ -107,7 +109,7 @@ function App() {
             setAwaitingConfirmation(false);
             
             if (isVoice) {
-              speak(confirmationResponse.content);
+              ttsSpeak(confirmationResponse.content);
             }
             
             toast.success('План подтверждён! Готов к выполнению.');
@@ -126,7 +128,7 @@ function App() {
             setAwaitingConfirmation(true);
             
             if (isVoice) {
-              speak(plannerResponse.content);
+              ttsSpeak(plannerResponse.content);
             }
             
             toast.success('План обновлён');
@@ -161,7 +163,7 @@ function App() {
           }
           
           if (isVoice) {
-            speak(plannerResponse.content);
+            ttsSpeak(plannerResponse.content);
           }
           
           toast.success('План создан - ожидает подтверждения');
@@ -176,7 +178,7 @@ function App() {
           
           agentMessages.forEach((message, index) => {
             setTimeout(() => {
-              speak(message.content);
+              ttsSpeak(message.content);
             }, index * 1000);
           });
           
@@ -198,7 +200,7 @@ function App() {
           
           agentMessages.forEach((message, index) => {
             setTimeout(() => {
-              speak(message.content);
+              ttsSpeak(message.content);
             }, index * 1500);
           });
           
@@ -233,7 +235,7 @@ function App() {
         }
         
         if (isVoice) {
-          speak(llmResponse);
+          ttsSpeak(llmResponse);
         }
         
         toast.success('Ответ получен!');

@@ -11,9 +11,8 @@ export function useVoiceRecognition() {
     confidence: 0,
   });
 
-  const [selectedVoice] = useKV<string>('selected-voice', '');
+  const [selectedVoice] = useKV<string>('selected-voice', 'EXAVITQu4vr4xnSDxMaL');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const synthesisRef = useRef<SpeechSynthesis | null>(null);
 
   useEffect(() => {
     try {
@@ -27,10 +26,6 @@ export function useVoiceRecognition() {
           recognitionInstance.lang = 'ru-RU'; // Changed to Russian
           
           recognitionRef.current = recognitionInstance;
-        }
-
-        if (window.speechSynthesis) {
-          synthesisRef.current = window.speechSynthesis;
         }
       }
     } catch (error) {
@@ -111,49 +106,46 @@ export function useVoiceRecognition() {
 
   const speak = useCallback(async (text: string) => {
     try {
-      // Try ElevenLabs first, fallback to browser TTS
+      // Try new TTS service first
       if (ttsService.isAvailable()) {
-        await ttsService.speak(text);
+        await ttsService.speak(text, selectedVoice);
       } else {
-        // Fallback to browser TTS with selected voice
-        const synthesis = synthesisRef.current;
-        if (!synthesis) {
-          console.warn('Speech synthesis not available');
-          return;
-        }
-
-        synthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.volume = 0.8;
-        utterance.lang = 'ru-RU';
-        
-        // Используем выбранный голос, если он задан
-        if (selectedVoice) {
-          const voices = synthesis.getVoices();
-          const voice = voices.find(v => v.voiceURI === selectedVoice);
-          if (voice) {
-            utterance.voice = voice;
+        // Fallback to browser TTS
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 0.9;
+          utterance.pitch = 1;
+          utterance.volume = 0.8;
+          utterance.lang = 'ru-RU';
+          
+          // Используем выбранный голос, если он задан
+          if (selectedVoice) {
+            const voices = window.speechSynthesis.getVoices();
+            const voice = voices.find(v => v.voiceURI === selectedVoice);
+            if (voice) {
+              utterance.voice = voice;
+            }
           }
+          
+          window.speechSynthesis.speak(utterance);
+        } else {
+          console.warn('No TTS available');
         }
-        
-        synthesis.speak(utterance);
       }
     } catch (error) {
       console.error('Error with speech synthesis:', error);
-      // Final fallback
-      const synthesis = synthesisRef.current;
-      if (synthesis) {
-        synthesis.cancel();
+      // Final fallback to browser TTS
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ru-RU';
-        synthesis.speak(utterance);
+        window.speechSynthesis.speak(utterance);
       }
     }
   }, [selectedVoice]);
 
-  const isSupported = Boolean(recognitionRef.current && synthesisRef.current);
+  const isSupported = Boolean(recognitionRef.current);
 
   return {
     voiceState,
