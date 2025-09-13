@@ -248,8 +248,8 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
           </div>
         </div>
 
-        {/* Work Mode selector moved below */}
-        <div className="flex items-center gap-2">
+        {/* Work Mode selector moved to the right side under the buttons */}
+        <div className="flex justify-end">
           <WorkModeSelector
             selectedMode={workMode}
             onModeSelect={setWorkMode}
