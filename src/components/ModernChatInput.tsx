@@ -18,6 +18,7 @@ import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
 import { useVoiceRecognition } from '@/hooks/use-voice';
+import { useWhisperSTT } from '@/hooks/use-whisper-stt';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -29,7 +30,8 @@ import {
   Brain,
   CaretDown,
   Sparkle,
-  ArrowClockwise
+  ArrowClockwise,
+  Warning
 } from '@phosphor-icons/react';
 
 interface ModernChatInputProps {
@@ -69,18 +71,30 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     supportDetails,
   } = useVoiceRecognition();
 
+  // Используем Whisper STT как альтернативу
+  const whisperSTT = useWhisperSTT();
+
+  // Определяем какой метод STT использовать
+  const useWhisperFallback = !isSupported && whisperSTT.isSupported;
+  const currentSTTState = useWhisperFallback ? whisperSTT.state : voiceState;
+  const isSTTAvailable = isSupported || whisperSTT.isSupported;
+
   // Обновляем input при получении транскрипта
   useEffect(() => {
-    if (voiceState.transcript.trim()) {
-      setInput(voiceState.transcript.trim());
+    if (currentSTTState.transcript.trim()) {
+      setInput(currentSTTState.transcript.trim());
     }
-  }, [voiceState.transcript]);
+  }, [currentSTTState.transcript]);
 
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || disabled) return;
     
-    onSubmit(input, workMode || 'plan', voiceState.isListening);
+    const isVoiceInput = useWhisperFallback 
+      ? (currentSTTState as any).isRecording 
+      : (currentSTTState as any).isListening;
+    
+    onSubmit(input, workMode || 'plan', isVoiceInput);
     setInput('');
   }, [input, workMode, onSubmit, disabled, voiceState.isListening]);
 
@@ -95,28 +109,44 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     console.log('=== STT TOGGLE CLICKED ===');
     console.log('Кнопка STT нажата!');
     console.log('isSupported:', isSupported);
-    console.log('voiceState:', voiceState);
+    console.log('whisperSTT.isSupported:', whisperSTT.isSupported);
+    console.log('useWhisperFallback:', useWhisperFallback);
     
-    if (!isSupported) {
+    if (!isSTTAvailable) {
       console.warn('Speech recognition not supported');
-      alert('Распознавание речи не поддерживается в этом браузере.\nТребуется Chrome, Edge или Safari.');
+      alert('Распознавание речи не поддерживается в этом браузере и нет API ключей для Whisper.');
       return;
     }
 
-    if (voiceState.isListening) {
-      console.log('Stopping voice recognition...');
-      stopListening();
-    } else {
-      console.log('Starting voice recognition...');
+    if (useWhisperFallback) {
+      // Используем Whisper STT
+      console.log('Using Whisper STT');
       try {
-        await startListening();
-        console.log('startListening() completed');
+        await whisperSTT.startRecording();
       } catch (error) {
-        console.error('Error in startListening:', error);
-        alert(`Ошибка запуска STT: ${error}`);
+        console.error('Error with Whisper STT:', error);
+        alert(`Ошибка Whisper STT: ${error}`);
+      }
+    } else {
+      // Используем Web Speech API
+      console.log('Using Web Speech API');
+      const voiceIsListening = (voiceState as any).isListening;
+      
+      if (voiceIsListening) {
+        console.log('Stopping voice recognition...');
+        stopListening();
+      } else {
+        console.log('Starting voice recognition...');
+        try {
+          await startListening();
+          console.log('startListening() completed');
+        } catch (error) {
+          console.error('Error in startListening:', error);
+          alert(`Ошибка запуска STT: ${error}`);
+        }
       }
     }
-  }, [voiceState.isListening, isSupported, startListening, stopListening]);
+  }, [isSTTAvailable, useWhisperFallback, voiceState, whisperSTT, startListening, stopListening]);
 
   const handleFileUpload = useCallback(() => {
     const input = document.createElement('input');
@@ -308,14 +338,23 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               className={cn(
                 "h-7 w-7 p-0 transition-all duration-200 border border-transparent",
                 "hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]",
-                voiceState.isListening 
+                (currentSTTState as any).isListening || (currentSTTState as any).isRecording
                   ? "text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]" 
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
-              title={voiceState.isListening ? "Остановить запись" : "Голосовой ввод"}
-              disabled={!isSupported}
+              title={
+                (currentSTTState as any).isListening || (currentSTTState as any).isRecording
+                  ? "Остановить запись" 
+                  : useWhisperFallback
+                    ? "Голосовой ввод (Whisper)"
+                    : "Голосовой ввод (Web Speech)"
+              }
+              disabled={!isSTTAvailable}
             >
-              {voiceState.isListening ? <MicrophoneSlash size={16} /> : <Microphone size={16} />}
+              {((currentSTTState as any).isListening || (currentSTTState as any).isRecording) ? 
+                <MicrophoneSlash size={16} /> : 
+                <Microphone size={16} />
+              }
             </Button>
 
             {/* Attach file button */}
@@ -356,9 +395,9 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         </div>
 
         {/* Status indicators */}
-        {(voiceState.isListening || (selectedTools && selectedTools.length > 0) || selectedAgent) && (
+        {(((currentSTTState as any).isListening || (currentSTTState as any).isRecording) || (selectedTools && selectedTools.length > 0) || selectedAgent) && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {voiceState.isListening && (
+            {((currentSTTState as any).isListening || (currentSTTState as any).isRecording) && (
               <div className="flex items-center gap-1">
                 <div className="voice-waveform">
                   <div className="voice-bar"></div>
@@ -367,7 +406,18 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                   <div className="voice-bar"></div>
                   <div className="voice-bar"></div>
                 </div>
-                <span>Слушаю...</span>
+                <span>
+                  {useWhisperFallback 
+                    ? (currentSTTState as any).isProcessing ? 'Обрабатываю...' : 'Записываю...'
+                    : 'Слушаю...'
+                  }
+                </span>
+                {useWhisperFallback && (
+                  <Badge variant="outline" className="text-xs">
+                    <Warning size={10} className="mr-1" />
+                    Whisper
+                  </Badge>
+                )}
               </div>
             )}
             {selectedTools && selectedTools.length > 0 && (
@@ -389,16 +439,20 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-muted-foreground space-y-1">
             <div>
-              STT поддержка: {isSupported ? '✅' : '❌'} | 
-              Web Speech API: {supportDetails?.hasSpeechRecognition ? '✅' : '❌'} | 
-              MediaDevices: {supportDetails?.hasMediaDevices ? '✅' : '❌'} | 
-              getUserMedia: {supportDetails?.hasGetUserMedia ? '✅' : '❌'} | 
-              Состояние: {voiceState.isListening ? 'Слушаю' : voiceState.isProcessing ? 'Обработка' : 'Ожидание'} | 
-              Кнопка: {!isSupported ? 'Заблокирована' : 'Активна'}
+              STT поддержка: {isSTTAvailable ? '✅' : '❌'} | 
+              Web Speech API: {isSupported ? '✅' : '❌'} | 
+              Whisper API: {whisperSTT.isSupported ? '✅' : '❌'} | 
+              Состояние: {
+                useWhisperFallback 
+                  ? ((currentSTTState as any).isRecording ? 'Записываю' : (currentSTTState as any).isProcessing ? 'Обрабатываю' : 'Ожидание')
+                  : ((currentSTTState as any).isListening ? 'Слушаю' : (currentSTTState as any).isProcessing ? 'Обработка' : 'Ожидание')
+              } | 
+              Метод: {useWhisperFallback ? 'Whisper' : 'Web Speech'}
             </div>
             <div>
-              Транскрипт: "{voiceState.transcript}" |
-              Уверенность: {(voiceState.confidence * 100).toFixed(1)}%
+              Транскрипт: "{currentSTTState.transcript}" |
+              Уверенность: {(currentSTTState.confidence * 100).toFixed(1)}%
+              {(currentSTTState as any).error && ` | Ошибка: ${(currentSTTState as any).error}`}
             </div>
             {supportDetails && (
               <div className="text-xs">
