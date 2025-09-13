@@ -17,6 +17,7 @@ import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
+import { useVoiceRecognition } from '@/hooks/use-voice';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -47,7 +48,6 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
   const [workMode, setWorkMode] = useKV<WorkMode>('work-mode', 'ask');
   const [selectedTools, setSelectedTools] = useKV<string[]>('selected-tools', []);
   const [selectedAgent, setSelectedAgent] = useKV<string>('selected-agent', 'architector');
-  const [isListening, setIsListening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Используем хук для работы с моделями
@@ -60,13 +60,35 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     refreshModels,
   } = useModelSelection();
 
+  // Используем хук для распознавания речи
+  const { 
+    voiceState, 
+    startListening, 
+    stopListening, 
+    isSupported: isVoiceSupported 
+  } = useVoiceRecognition();
+
+  // Обновляем input при получении транскрипта
+  useEffect(() => {
+    if (voiceState.transcript && !voiceState.isProcessing) {
+      setInput(voiceState.transcript);
+      // Автоматически отправляем сообщение после завершения распознавания
+      setTimeout(() => {
+        if (voiceState.transcript.trim()) {
+          onSubmit(voiceState.transcript, workMode || 'ask', true);
+          setInput('');
+        }
+      }, 500);
+    }
+  }, [voiceState.transcript, voiceState.isProcessing, onSubmit, workMode]);
+
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || disabled) return;
     
-    onSubmit(input, workMode || 'plan', isListening);
+    onSubmit(input, workMode || 'plan', voiceState.isListening);
     setInput('');
-  }, [input, workMode, onSubmit, disabled, isListening]);
+  }, [input, workMode, onSubmit, disabled, voiceState.isListening]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -75,10 +97,18 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     }
   }, [handleSubmit]);
 
-  const toggleVoiceRecognition = useCallback(() => {
-    setIsListening(!isListening);
-    // Here would be the actual voice recognition logic
-  }, [isListening]);
+  const toggleVoiceRecognition = useCallback(async () => {
+    if (!isVoiceSupported) {
+      console.warn('Speech recognition not supported');
+      return;
+    }
+
+    if (voiceState.isListening) {
+      stopListening();
+    } else {
+      await startListening();
+    }
+  }, [voiceState.isListening, isVoiceSupported, startListening, stopListening]);
 
   const handleFileUpload = useCallback(() => {
     const input = document.createElement('input');
@@ -270,13 +300,13 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               className={cn(
                 "h-7 w-7 p-0 transition-all duration-200 border border-transparent",
                 "hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]",
-                isListening 
+                voiceState.isListening 
                   ? "text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]" 
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
-              title={isListening ? "Остановить запись" : "Голосовой ввод"}
+              title={voiceState.isListening ? "Остановить запись" : "Голосовой ввод"}
             >
-              {isListening ? <MicrophoneSlash size={16} /> : <Microphone size={16} />}
+              {voiceState.isListening ? <MicrophoneSlash size={16} /> : <Microphone size={16} />}
             </Button>
 
             {/* Attach file button */}
@@ -317,9 +347,9 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         </div>
 
         {/* Status indicators */}
-        {(isListening || (selectedTools && selectedTools.length > 0) || selectedAgent) && (
+        {(voiceState.isListening || (selectedTools && selectedTools.length > 0) || selectedAgent) && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {isListening && (
+            {voiceState.isListening && (
               <div className="flex items-center gap-1">
                 <div className="voice-waveform">
                   <div className="voice-bar"></div>

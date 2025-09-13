@@ -47,18 +47,18 @@ export function useVoiceRecognition() {
   const startListening = useCallback(async () => {
     const recognition = recognitionRef.current;
     if (!recognition) {
-      console.warn('Speech recognition not available');
-      alert('Распознавание речи не поддерживается в этом браузере');
+      console.warn('STT: Speech recognition not available');
+      alert('Распознавание речи не поддерживается в этом браузере. Убедитесь, что вы используете Chrome, Edge или Safari.');
       return;
     }
 
     try {
       // Проверяем разрешение на микрофон
-      console.log('Запрашиваем разрешение на микрофон...');
+      console.log('STT: Запрашиваем разрешение на микрофон...');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => track.stop()); // Останавливаем поток, он нам нужен только для проверки разрешения
       
-      console.log('Разрешение на микрофон получено, запускаем STT...');
+      console.log('STT: Разрешение на микрофон получено, запускаем STT...');
 
       setVoiceState((prev) => ({
         ...prev,
@@ -67,7 +67,9 @@ export function useVoiceRecognition() {
         transcript: '',
       }));
 
-
+      recognition.addEventListener('start', () => {
+        console.log('STT: Распознавание речи запущено');
+      });
 
       recognition.onresult = (event) => {
         try {
