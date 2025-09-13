@@ -17,7 +17,7 @@ import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
-import { useVoiceSTTFallback } from '@/hooks/use-voice-stt-fallback';
+import { useWebAudioSTT } from '@/hooks/use-web-audio-stt';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -67,7 +67,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     stopListening, 
     isSupported,
     supportDetails 
-  } = useVoiceSTTFallback();
+  } = useWebAudioSTT();
 
   // Обновляем input при получении транскрипта
   useEffect(() => {
@@ -391,18 +391,21 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
           <div className="text-xs text-muted-foreground space-y-1">
             <div>
               STT поддержка: {isSupported ? '✅' : '❌'} | 
-              Web Speech API: {supportDetails?.hasSpeechRecognition ? '✅' : '❌'} |
+              MediaRecorder: {supportDetails?.hasMediaRecorder ? '✅' : '❌'} |
               MediaDevices: {supportDetails?.hasMediaDevices ? '✅' : '❌'} |
-              getUserMedia: {supportDetails?.hasGetUserMedia ? '✅' : '❌'}
+              getUserMedia: {supportDetails?.hasGetUserMedia ? '✅' : '❌'} |
+              WebAudio: {supportDetails?.hasWebAudio ? '✅' : '❌'}
             </div>
             <div>
               Протокол: {supportDetails?.protocol || window.location.protocol} |
+              Secure Context: {supportDetails?.isSecureContext ? '✅' : '❌'} |
               Состояние: {voiceState.isListening ? 'Слушаю' : voiceState.isProcessing ? 'Обработка' : 'Ожидание'} |
               Кнопка: {!isSupported ? 'Заблокирована' : 'Активна'}
             </div>
             <div>
               Транскрипт: "{voiceState.transcript}" |
-              Уверенность: {(voiceState.confidence * 100).toFixed(1)}%
+              Уверенность: {(voiceState.confidence * 100).toFixed(1)}% |
+              Аудио уровень: {((voiceState as any).audioLevel * 100).toFixed(1)}%
             </div>
             <div className="text-xs opacity-75">
               Браузер: {supportDetails?.userAgent?.slice(0, 50)}...
