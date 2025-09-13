@@ -410,8 +410,8 @@ export function ModernChatInput({
       {/* Режимы работы */}
       <div className="flex justify-end">
         <WorkModeSelector 
-          workMode={workModeState} 
-          onWorkModeChange={(mode) => {
+          selectedMode={workModeState} 
+          onModeSelect={(mode) => {
             setWorkModeState(mode);
             setWorkMode(mode);
           }}

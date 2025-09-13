@@ -47,14 +47,16 @@ function App() {
     resetAllAgents,
   } = agentSystem;
 
-  const createMessage = useCallback((content: string, type: 'user' | 'agent', agentType?: AgentType, isVoice?: boolean): Message => {
-    return {
-      id: `msg_${Date.now()}_${type}`,
-      type,
-      content,
-      timestamp: new Date(),
-      agentType,
-      isVoice,
+  const createMessage = useMemo(() => {
+    return (content: string, type: 'user' | 'agent', agentType?: AgentType, isVoice?: boolean): Message => {
+      return {
+        id: `msg_${Date.now()}_${type}`,
+        type,
+        content,
+        timestamp: new Date(),
+        agentType,
+        isVoice,
+      };
     };
   }, []);
 
@@ -244,7 +246,7 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [setMessages, createPlan, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan, addMessageToContext]);
+  }, [createPlan, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan, addMessageToContext, ttsSpeak]);
 
   const handleConfirmPlan = useCallback(() => {
     confirmPlan();
@@ -254,7 +256,7 @@ function App() {
   const handleClearHistory = useCallback(() => {
     setMessages([]);
     toast.success('История чата очищена');
-  }, [setMessages]);
+  }, []);
 
   const renderMode = () => {
     switch (currentMode) {

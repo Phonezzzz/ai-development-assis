@@ -22,6 +22,7 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
   const [detailedPrompt, setDetailedPrompt] = useState('');
   const [images, setImages] = useKV<GeneratedImage[]>('generated-images', []);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [workMode, setWorkMode] = useState<WorkMode>('plan');
 
   const generateImage = async () => {
     if (!prompt.trim()) return;
@@ -36,11 +37,11 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
       isGenerating: true,
     };
 
-    setImages((prev) => [newImage, ...prev]);
+    setImages((prev) => [newImage, ...(prev || [])]);
 
     // Simulate generation time
     setTimeout(() => {
-      setImages((prev) => prev.map(img => 
+      setImages((prev) => (prev || []).map(img => 
         img.id === newImage.id 
           ? { ...img, isGenerating: false }
           : img
@@ -53,7 +54,7 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
   };
 
   const deleteImage = (imageId: string) => {
-    setImages((prev) => prev.filter(img => img.id !== imageId));
+    setImages((prev) => (prev || []).filter(img => img.id !== imageId));
   };
 
   const downloadImage = async (imageUrl: string, filename: string) => {
@@ -164,6 +165,8 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
           }}
           placeholder="Опишите изображение для генерации..."
           disabled={isGenerating}
+          workMode={workMode}
+          setWorkMode={setWorkMode}
         />
       </div>
     </div>

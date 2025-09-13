@@ -21,6 +21,7 @@ interface ChatModeProps {
 
 export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [workMode, setWorkMode] = useState<WorkMode>('plan');
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -237,9 +238,11 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
 
       <div className="chat-input-area p-4">
         <ModernChatInput
-          onSubmit={onSendMessage}
+          onSubmit={(text, mode, isVoice) => onSendMessage(text, mode || workMode, isVoice)}
           placeholder="Задайте вопрос агентам..."
           disabled={isProcessing}
+          workMode={workMode}
+          setWorkMode={setWorkMode}
         />
       </div>
     </div>
