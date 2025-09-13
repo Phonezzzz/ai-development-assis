@@ -10,6 +10,7 @@ import { useVoiceRecognition } from '@/hooks/use-voice';
 import { ttsService } from '@/lib/services/tts';
 import { SpeakerHigh, Copy, Check } from '@phosphor-icons/react';
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 interface ChatModeProps {
@@ -26,8 +27,72 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
   }, [messages]);
+
+  // Typing indicator animation
+  const TypingIndicator = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="flex gap-3 justify-start"
+    >
+      <Avatar className="w-8 h-8 bg-card border">
+        <div className="text-lg">🤖</div>
+      </Avatar>
+      <div className="max-w-[70%]">
+        <Card className="p-3 bg-card">
+          <div className="flex items-center gap-1">
+            <div className="flex gap-1">
+              <motion.div
+                className="w-2 h-2 bg-accent rounded-full"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: 0
+                }}
+              />
+              <motion.div
+                className="w-2 h-2 bg-accent rounded-full"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: 0.2
+                }}
+              />
+              <motion.div
+                className="w-2 h-2 bg-accent rounded-full"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: 0.4
+                }}
+              />
+            </div>
+            <span className="text-sm text-muted-foreground ml-2">ИИ печатает...</span>
+          </div>
+        </Card>
+      </div>
+    </motion.div>
+  );
 
   const getAgentInfo = (agentType: AgentType) => {
     const agentMap = {
@@ -75,7 +140,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
 
   return (
     <div className="flex flex-col h-full max-h-screen">
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 chat-scroll-area">
         {messages.length === 0 ? (
           <Card className="p-8 text-center">
             <div className="text-4xl mb-4">💬</div>
@@ -86,14 +151,35 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
           </Card>
         ) : (
           <div className="space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex gap-3",
-                  message.type === 'user' ? "justify-end" : "justify-start"
-                )}
-              >
+            <AnimatePresence initial={false}>
+              {messages.map((message, index) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ 
+                    opacity: 0, 
+                    y: 20,
+                    scale: 0.95
+                  }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                    scale: 1
+                  }}
+                  exit={{ 
+                    opacity: 0, 
+                    y: -10,
+                    scale: 0.95
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                    delay: index === messages.length - 1 ? 0.1 : 0
+                  }}
+                  className={cn(
+                    "flex gap-3",
+                    message.type === 'user' ? "justify-end" : "justify-start"
+                  )}
+                >
                 {message.type === 'agent' && (
                   <Avatar className="w-8 h-8 bg-card border">
                     <div className="text-lg">
@@ -148,35 +234,63 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                       </div>
                       
                       {message.type === 'agent' && (
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyMessage(message.content, message.id)}
-                            className="h-6 w-6 p-0 opacity-50 hover:opacity-100"
-                            title="Скопировать сообщение"
+                        <motion.div 
+                          className="flex gap-1"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            {copiedMessageId === message.id ? (
-                              <Check size={12} className="text-green-500" />
-                            ) : (
-                              <Copy size={12} />
-                            )}
-                          </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyMessage(message.content, message.id)}
+                              className="h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200"
+                              title="Скопировать сообщение"
+                            >
+                              {copiedMessageId === message.id ? (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                >
+                                  <Check size={12} className="text-green-500" />
+                                </motion.div>
+                              ) : (
+                                <Copy size={12} />
+                              )}
+                            </Button>
+                          </motion.div>
                           
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => speakMessage(message.content, message.id)}
-                            disabled={speakingMessageId === message.id}
-                            className={cn(
-                              "h-6 w-6 p-0 opacity-50 hover:opacity-100",
-                              speakingMessageId === message.id && "opacity-100 text-accent"
-                            )}
-                            title="Воспроизвести сообщение"
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            <SpeakerHigh size={12} />
-                          </Button>
-                        </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => speakMessage(message.content, message.id)}
+                              disabled={speakingMessageId === message.id}
+                              className={cn(
+                                "h-6 w-6 p-0 opacity-50 hover:opacity-100 transition-all duration-200",
+                                speakingMessageId === message.id && "opacity-100 text-accent"
+                              )}
+                              title="Воспроизвести сообщение"
+                            >
+                              <motion.div
+                                animate={speakingMessageId === message.id ? {
+                                  scale: [1, 1.2, 1],
+                                  transition: { repeat: Infinity, duration: 1 }
+                                } : {}}
+                              >
+                                <SpeakerHigh size={12} />
+                              </motion.div>
+                            </Button>
+                          </motion.div>
+                        </motion.div>
                       )}
                     </div>
                   </Card>
@@ -187,8 +301,15 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                     <div className="text-sm font-semibold">П</div>
                   </Avatar>
                 )}
-              </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
+            
+            {/* Показать индикатор печати когда ИИ обрабатывает запрос */}
+            <AnimatePresence>
+              {isProcessing && <TypingIndicator />}
+            </AnimatePresence>
+            
             {/* Auto-scroll anchor */}
             <div ref={messagesEndRef} />
           </div>
