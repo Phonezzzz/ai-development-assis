@@ -2,8 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Toaster } from '@/components/ui/sonner';
 import { ModeSelector } from '@/components/ModeSelector';
-import { AgentDisplay } from '@/components/AgentDisplay';
-import { AgentToolsDisplay } from '@/components/AgentToolsDisplay';
+import { ChatHistory } from '@/components/ChatHistory';
 import { PlanViewer } from '@/components/PlanViewer';
 import { ApiConfigurationWarning } from '@/components/ApiConfigurationWarning';
 import { ChatMode } from '@/components/modes/ChatMode';
@@ -156,23 +155,10 @@ function App() {
     toast.success('План подтвержден! Готов к выполнению.');
   }, [confirmPlan]);
 
-  const handleExecutePlan = useCallback(async () => {
-    try {
-      const agentMessages = await executePlan();
-      setMessages((prev) => [...prev, ...agentMessages]);
-      
-      agentMessages.forEach((message, index) => {
-        setTimeout(() => {
-          speak(message.content);
-        }, index * 1000);
-      });
-      
-      toast.success('План выполнен успешно!');
-    } catch (error) {
-      console.error('Error executing plan:', error);
-      toast.error('Ошибка при выполнении плана');
-    }
-  }, [executePlan, setMessages, speak]);
+  const handleClearHistory = useCallback(() => {
+    setMessages([]);
+    toast.success('История чата очищена');
+  }, [setMessages]);
 
   const renderMode = () => {
     switch (currentMode) {
@@ -222,18 +208,16 @@ function App() {
           <div className="p-4 space-y-4">
             <ApiConfigurationWarning />
             
-            <AgentDisplay
-              agents={agents}
-              currentAgent={currentAgent}
+            <ChatHistory
+              messages={messages || []}
+              onClearHistory={handleClearHistory}
             />
-            
-            <AgentToolsDisplay />
             
             {currentPlan && (
               <PlanViewer
                 plan={currentPlan}
                 onConfirmPlan={handleConfirmPlan}
-                onExecutePlan={handleExecutePlan}
+                onExecutePlan={() => {}}
                 isExecuting={isWorking}
               />
             )}

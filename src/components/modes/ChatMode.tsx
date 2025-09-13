@@ -3,12 +3,12 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { VoiceInput } from '@/components/VoiceInput';
+import { ModernChatInput } from '@/components/ModernChatInput';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
 import { ttsService } from '@/lib/services/tts';
-import { Volume2, Copy, Check } from '@phosphor-icons/react';
+import { SpeakerHigh, Copy, Check } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -164,7 +164,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                             )}
                             title="Воспроизвести сообщение"
                           >
-                            <Volume2 size={12} />
+                            <SpeakerHigh size={12} />
                           </Button>
                         </div>
                       )}
@@ -188,7 +188,7 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
       </ScrollArea>
 
       <div className="p-4 border-t bg-background">
-        <VoiceInput
+        <ModernChatInput
           onSubmit={onSendMessage}
           placeholder="Задайте вопрос агентам..."
           disabled={isProcessing}
