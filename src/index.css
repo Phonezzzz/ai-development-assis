@@ -32,7 +32,11 @@
   --input: rgba(139, 92, 246, 0.3);
   --ring: rgba(139, 92, 246, 0.8);
 
-  --radius: 0.75rem;
+  --radius: 1rem;
+
+  --font-sans: Open Sans;
+
+  --font-serif: "PT Serif";
 }
 
 @theme {
@@ -259,6 +263,7 @@
 /* Starfield background */
 body {
   background-color: #000;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 #starfield-canvas {
