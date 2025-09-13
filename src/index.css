@@ -9,7 +9,7 @@
 
 :root {
   /* Dark theme with purple accents - Perplexity-inspired */
-  --background: oklch(0.15 0.02 240);
+  --background: #000000;
   --foreground: oklch(0.9 0.05 280);
 
   --card: oklch(0.25 0.05 245);
@@ -132,4 +132,25 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
+}
+
+/* Starfield background */
+body {
+  background-color: #000;
+  overflow: hidden;
+}
+
+#starfield-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }

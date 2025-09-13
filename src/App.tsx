@@ -180,9 +180,9 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground flex flex-col">
+    <div className="h-screen text-foreground flex flex-col relative bg-transparent">
       {/* Header */}
-      <header className="border-b bg-card p-4">
+      <header className="border-b bg-card/80 backdrop-blur-sm p-4 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="text-2xl">🤖</div>
@@ -204,7 +204,7 @@ function App() {
       {/* Main Content */}
       <div className="flex-1 flex min-h-0">
         {/* Sidebar */}
-        <aside className="w-80 border-r bg-card flex flex-col">
+        <aside className="w-80 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10">
           <div className="p-4 space-y-4">
             <ApiConfigurationWarning />
             
@@ -225,7 +225,7 @@ function App() {
         </aside>
 
         {/* Main View */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 bg-transparent relative z-10">
           {renderMode()}
         </main>
       </div>
@@ -234,9 +234,10 @@ function App() {
         position="bottom-right"
         toastOptions={{
           style: {
-            background: 'oklch(0.25 0.05 245)',
+            background: 'rgba(39, 39, 42, 0.9)',
             color: 'oklch(0.9 0.05 280)',
             border: '1px solid oklch(0.3 0.05 245)',
+            backdropFilter: 'blur(8px)',
           },
         }}
       />
