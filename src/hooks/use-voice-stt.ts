@@ -188,14 +188,15 @@ export function useVoiceSTT() {
     }
   }, []);
 
-  const isSupported = useCallback(() => {
-    return !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition;
-  }, []);
+  const isSupported = Boolean(
+    typeof window !== 'undefined' && 
+    ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+  );
 
   return {
     voiceState,
     startListening,
     stopListening,
-    isSupported: isSupported(),
+    isSupported,
   };
 }

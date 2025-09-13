@@ -98,15 +98,29 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
   }, [handleSubmit]);
 
   const toggleVoiceRecognition = useCallback(async () => {
+    console.log('=== STT TOGGLE CLICKED ===');
+    console.log('isSupported:', isSupported);
+    console.log('voiceState:', voiceState);
+    console.log('SpeechRecognition available:', !!(window as any).SpeechRecognition);
+    console.log('webkitSpeechRecognition available:', !!(window as any).webkitSpeechRecognition);
+    
     if (!isSupported) {
       console.warn('Speech recognition not supported');
+      alert('Распознавание речи не поддерживается в этом браузере. Попробуйте использовать Chrome, Edge или Safari.');
       return;
     }
 
     if (voiceState.isListening) {
+      console.log('Stopping voice recognition...');
       stopListening();
     } else {
-      await startListening();
+      console.log('Starting voice recognition...');
+      try {
+        await startListening();
+        console.log('startListening() completed');
+      } catch (error) {
+        console.error('Error in startListening:', error);
+      }
     }
   }, [voiceState.isListening, isSupported, startListening, stopListening]);
 
@@ -296,7 +310,16 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               type="button"
               variant="ghost"
               size="sm"
-              onClick={toggleVoiceRecognition}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('STT button clicked directly');
+                
+                // Простой тест на клик
+                alert('Кнопка STT нажата! Поддержка: ' + (isSupported ? 'Да' : 'Нет'));
+                
+                toggleVoiceRecognition();
+              }}
               className={cn(
                 "h-7 w-7 p-0 transition-all duration-200 border border-transparent",
                 "hover:border-accent hover:shadow-[0_0_8px_rgba(147,51,234,0.3)]",
@@ -305,6 +328,7 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
               title={voiceState.isListening ? "Остановить запись" : "Голосовой ввод"}
+              disabled={false}
             >
               {voiceState.isListening ? <MicrophoneSlash size={16} /> : <Microphone size={16} />}
             </Button>
@@ -373,6 +397,16 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                 <span>Агент выбран</span>
               </div>
             )}
+          </div>
+        )}
+        
+        {/* Debug info for STT */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-muted-foreground">
+            STT поддержка: {isSupported ? '✅' : '❌'} | 
+            Web Speech API: {(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition ? '✅' : '❌'} |
+            Состояние: {voiceState.isListening ? 'Слушаю' : 'Ожидание'} |
+            Транскрипт: "{voiceState.transcript}"
           </div>
         )}
       </form>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STT Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #111;
+            color: #fff;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .listening {
+            background: #dc2626;
+        }
+        .idle {
+            background: #16a34a;
+        }
+        .transcript {
+            background: #1f2937;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Speech Recognition Debug</h1>
+    
+    <div id="support-status"></div>
+    
+    <button id="start-btn" onclick="startListening()">Начать запись</button>
+    <button id="stop-btn" onclick="stopListening()" disabled>Остановить запись</button>
+    
+    <div id="status" class="status idle">Ожидание...</div>
+    
+    <div class="transcript">
+        <h3>Результат:</h3>
+        <div id="transcript"></div>
+    </div>
+    
+    <div class="transcript">
+        <h3>Лог:</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let recognition = null;
+        let isListening = false;
+        
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log('[STT]', message);
+        }
+        
+        function updateStatus(message, isActive = false) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${isActive ? 'listening' : 'idle'}`;
+        }
+        
+        function updateButtons() {
+            document.getElementById('start-btn').disabled = isListening;
+            document.getElementById('stop-btn').disabled = !isListening;
+        }
+        
+        // Проверяем поддержку
+        function checkSupport() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const supportElement = document.getElementById('support-status');
+            
+            if (SpeechRecognition) {
+                supportElement.innerHTML = '✅ Speech Recognition поддерживается';
+                supportElement.style.color = '#10b981';
+                log('Speech Recognition API найден');
+                initRecognition();
+            } else {
+                supportElement.innerHTML = '❌ Speech Recognition НЕ поддерживается в этом браузере';
+                supportElement.style.color = '#ef4444';
+                log('Speech Recognition API не найден');
+                document.getElementById('start-btn').disabled = true;
+            }
+        }
+        
+        function initRecognition() {
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = 'ru-RU';
+                recognition.maxAlternatives = 1;
+                
+                log('Recognition инициализирован с настройками: continuous=false, interimResults=true, lang=ru-RU');
+                
+                recognition.onstart = () => {
+                    log('onstart - Распознавание запущено');
+                    isListening = true;
+                    updateStatus('Слушаю...', true);
+                    updateButtons();
+                };
+                
+                recognition.onresult = (event) => {
+                    log(`onresult - Получен результат, results.length=${event.results.length}`);
+                    
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+                    
+                    for (let i = 0; i < event.results.length; i++) {
+                        const result = event.results[i];
+                        const transcript = result[0].transcript;
+                        const confidence = result[0].confidence;
+                        
+                        log(`Результат ${i}: "${transcript}" (final=${result.isFinal}, confidence=${confidence})`);
+                        
+                        if (result.isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    const currentTranscript = finalTranscript || interimTranscript;
+                    document.getElementById('transcript').textContent = currentTranscript;
+                    
+                    if (finalTranscript) {
+                        log(`Финальный результат: "${finalTranscript}"`);
+                        setTimeout(() => recognition.stop(), 100);
+                    }
+                };
+                
+                recognition.onerror = (event) => {
+                    log(`onerror - Ошибка: ${event.error}`);
+                    updateStatus(`Ошибка: ${event.error}`, false);
+                    isListening = false;
+                    updateButtons();
+                };
+                
+                recognition.onend = () => {
+                    log('onend - Распознавание завершено');
+                    isListening = false;
+                    updateStatus('Завершено', false);
+                    updateButtons();
+                };
+                
+            } catch (error) {
+                log(`Ошибка инициализации: ${error.message}`);
+            }
+        }
+        
+        async function startListening() {
+            if (!recognition) {
+                log('Recognition не инициализирован');
+                return;
+            }
+            
+            try {
+                log('Запрос разрешения на микрофон...');
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                log('Разрешение на микрофон получено');
+                stream.getTracks().forEach(track => track.stop());
+                
+                log('Запуск recognition.start()...');
+                recognition.start();
+                
+            } catch (error) {
+                log(`Ошибка доступа к микрофону: ${error.name} - ${error.message}`);
+                updateStatus(`Ошибка микрофона: ${error.message}`, false);
+            }
+        }
+        
+        function stopListening() {
+            if (recognition) {
+                log('Принудительная остановка...');
+                recognition.stop();
+            }
+        }
+        
+        // Инициализация при загрузке
+        window.addEventListener('load', () => {
+            log('Страница загружена, проверяем поддержку...');
+            checkSupport();
+        });
+    </script>
+</body>
+</html>
