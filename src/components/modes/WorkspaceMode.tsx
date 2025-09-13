@@ -13,12 +13,13 @@ import { ProjectFile } from '@/lib/types';
 import { cn, formatDisplayDate } from '@/lib/utils';
 import { vectorService } from '@/lib/services/vector';
 import { agentTools } from '@/lib/services/agent-tools';
+import { fileIndexerService, ProjectIndex as ProjectIndexType } from '@/lib/services/file-indexer';
 import { toast } from 'sonner';
 import { 
   File, 
   Folder, 
   Upload, 
-  Search, 
+  MagnifyingGlass, 
   Code, 
   Trash, 
   Download,
@@ -33,21 +34,8 @@ import {
   Archive,
   FileCode,
   ChatCircle,
-  Sparkles
+  Sparkle
 } from '@phosphor-icons/react';
-
-interface ProjectIndex {
-  id: string;
-  name: string;
-  files: ProjectFile[];
-  structure: any;
-  createdAt: Date;
-  stats: {
-    totalFiles: number;
-    languages: string[];
-    size: number;
-  };
-}
 
 interface TerminalSession {
   id: string;
@@ -76,8 +64,8 @@ export function WorkspaceMode() {
     getFileIcon,
   } = useFileUpload();
 
-  const [projectIndexes, setProjectIndexes] = useKV<ProjectIndex[]>('project-indexes', []);
-  const [selectedProject, setSelectedProject] = useState<ProjectIndex | null>(null);
+  const [projectIndexes, setProjectIndexes] = useKV<ProjectIndexType[]>('project-indexes', []);
+  const [selectedProject, setSelectedProject] = useState<ProjectIndexType | null>(null);
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingContent, setEditingContent] = useState('');
@@ -144,65 +132,16 @@ export function WorkspaceMode() {
     toast.info('Начинаю индексацию проекта...');
     
     try {
-      // Index the entire project
-      const projectMapTool = agentTools.find(tool => tool.name === 'project_indexer');
-      if (projectMapTool) {
-        const result = await projectMapTool.execute({
-          files,
-          action: 'create'
-        });
+      // Use the new file indexer service
+      const projectIndex = await fileIndexerService.indexProject(files, {
+        name: files[0].webkitRelativePath?.split('/')[0] || 'New Project',
+      });
 
-        if (result.success) {
-          const projectIndex: ProjectIndex = {
-            id: `project_${Date.now()}`,
-            name: files[0].webkitRelativePath?.split('/')[0] || 'New Project',
-            files: Array.from(files).map(file => ({
-              id: `file_${Date.now()}_${file.name}`,
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              lastModified: new Date(file.lastModified),
-              content: '', // Will be loaded when needed
-              path: file.webkitRelativePath || file.name,
-            })),
-            structure: result.data,
-            createdAt: new Date(),
-            stats: {
-              totalFiles: files.length,
-              languages: result.data.stats.languages,
-              size: Array.from(files).reduce((total, file) => total + file.size, 0),
-            },
-          };
+      setProjectIndexes(prev => [...(prev || []), projectIndex]);
+      setSelectedProject(projectIndex);
+      setActiveTab('explorer');
 
-          setProjectIndexes(prev => [...prev, projectIndex]);
-          setSelectedProject(projectIndex);
-          setActiveTab('explorer');
-
-          // Index files for vector search
-          for (const file of files) {
-            if (file.type.startsWith('text/') || file.name.endsWith('.js') || 
-                file.name.endsWith('.ts') || file.name.endsWith('.tsx') || 
-                file.name.endsWith('.jsx') || file.name.endsWith('.py') ||
-                file.name.endsWith('.md') || file.name.endsWith('.json')) {
-              
-              const content = await file.text();
-              await vectorService.addDocument({
-                id: `${projectIndex.id}_${file.name}`,
-                content,
-                metadata: {
-                  type: 'project_file',
-                  projectId: projectIndex.id,
-                  fileName: file.name,
-                  filePath: file.webkitRelativePath || file.name,
-                  fileType: file.type,
-                },
-              });
-            }
-          }
-
-          toast.success(`Проект "${projectIndex.name}" успешно проиндексирован!`);
-        }
-      }
+      toast.success(`Проект "${projectIndex.name}" успешно проиндексирован!`);
     } catch (error) {
       console.error('Error indexing project:', error);
       toast.error('Ошибка при индексации проекта');
@@ -283,7 +222,7 @@ export function WorkspaceMode() {
         ? `Контекст проекта: ${selectedProject.name}\nФайлы: ${selectedProject.files.map(f => f.name).join(', ')}\nЯзыки: ${selectedProject.stats.languages.join(', ')}`
         : 'Нет активного проекта';
 
-      const prompt = spark.llmPrompt`Ты - ИИ помощник в рабочем пространстве разработки. 
+      const prompt = window.spark.llmPrompt`Ты - ИИ помощник в рабочем пространстве разработки. 
 
 ${contextPrompt}
 
@@ -291,7 +230,7 @@ ${contextPrompt}
 
 Отвечай на русском языке и предоставляй практические советы для работы с проектом. Если нужно выполнить действия с файлами или кодом, предложи конкретные шаги.`;
 
-      const response = await spark.llm(prompt, 'gpt-4o');
+      const response = await window.spark.llm(prompt, 'gpt-4o');
       
       // Add agent response to terminal as a special command
       const agentCommand = {
@@ -353,7 +292,7 @@ ${contextPrompt}
 
           <TabsContent value="explorer" className="flex-1 p-4 space-y-3">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -711,10 +650,10 @@ ${contextPrompt}
                   >
                     {isAgentWorking ? (
                       <div className="animate-spin">
-                        <Sparkles size={16} />
+                        <Sparkle size={16} />
                       </div>
                     ) : (
-                      <Sparkles size={16} />
+                      <Sparkle size={16} />
                     )}
                   </Button>
                 </div>

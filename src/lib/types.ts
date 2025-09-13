@@ -44,6 +44,15 @@ export interface ProjectFile {
   size: number;
   content?: string;
   lastModified: Date;
+  metadata?: {
+    extension?: string;
+    language?: string;
+    isTextFile?: boolean;
+    isBinary?: boolean;
+    projectId?: string;
+    similarity?: number;
+    [key: string]: any;
+  };
 }
 
 export interface Plan {
