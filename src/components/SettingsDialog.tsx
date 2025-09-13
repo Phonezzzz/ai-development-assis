@@ -18,14 +18,18 @@ import { useTTS, ELEVENLABS_VOICES } from '@/hooks/use-tts';
 
 export function SettingsDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'pNInz6obpgDQGcFmaJgB');
+  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb');
   const [systemPrompt, setSystemPrompt] = useKV<string>('system-prompt', 
     'Вы - умный помощник, который отвечает на русском языке. Будьте полезными, точными и дружелюбными.'
   );
   
-  const { speak, stop, ttsState, isAvailable } = useTTS();
+  const { speak, stop, ttsState, isAvailable, setSelectedVoice: setTTSVoice } = useTTS();
 
   const handleSaveSettings = () => {
+    // Синхронизация голоса с TTS хуком
+    if (selectedVoice) {
+      setTTSVoice(selectedVoice);
+    }
     toast.success('Настройки сохранены!');
     setIsOpen(false);
   };
@@ -42,9 +46,10 @@ export function SettingsDialog() {
     }
 
     try {
-      await speak('Привет! Это тестирование выбранного голоса ElevenLabs.');
+      await speak('Привет! Это тестирование выбранного голоса ElevenLabs. Голос звучит хорошо для русского языка.');
       toast.success('Воспроизведение тестовой фразы...');
     } catch (error) {
+      console.error('TTS test error:', error);
       toast.error('Ошибка при тестировании голоса');
     }
   };

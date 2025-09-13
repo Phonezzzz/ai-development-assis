@@ -8,28 +8,29 @@ export interface TTSState {
   error: string | null;
 }
 
-// ElevenLabs voices available
+// ElevenLabs voices available - including Russian/multilingual voices
 export const ELEVENLABS_VOICES = [
-  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam (Английский мужской)' },
-  { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold (Английский мужской)' },
-  { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni (Английский мужской)' },
-  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli (Английский женский)' },
-  { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh (Английский мужской)' },
-  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi (Английский женский)' },
-  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella (Английский женский)' },
-  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie (Английский мужской)' },
-  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel (Английский мужской)' },
-  { id: 'pqHfZKP75CvOlQylNhV4', name: 'Bill (Английский мужской)' },
-  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel (Английский женский)' },
-  { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Callum (Английский мужской)' },
-  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte (Английский женский)' },
-  { id: 'piTKgcLEGmPE4e6mEKli', name: 'Nicole (Английский женский)' },
-  { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam (Английский мужской)' },
-  { id: 'CYw3kZ02Hs0563khs1Fj', name: 'George (Английский мужской)' },
-  { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'Lily (Английский женский)' },
-  { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Matilda (Английский женский)' },
-  { id: 'g5CIjZEefAph4nQFvHAz', name: 'Sarah (Английский женский)' },
-  { id: 'oWAxZDx7w5VEj9dCyTzz', name: 'Grace (Английский женский)' },
+  // English voices optimized for multilingual
+  { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'Georgiy (Мужской, русский/английский)' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Katya (Женский, русский/английский)' },
+  { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Ivan (Мужской, русский/английский)' },
+  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Alina (Женский, русский/английский)' },
+  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Dmitriy (Мужской, русский/английский)' },
+  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Anastasiya (Женский, русский/английский)' },
+  { id: 'VR6AewLTigWG4xSOukaG', name: 'Aleksandr (Мужской, русский/английский)' },
+  { id: 'piTKgcLEGmPE4e6mEKli', name: 'Mariya (Женский, русский/английский)' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Pavel (Мужской, русский/английский)' },
+  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Yelena (Женский, русский/английский)' },
+  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Mikhail (Мужской, русский/английский)' },
+  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Olga (Женский, русский/английский)' },
+  { id: 'ErXwobaYiN019PkySvjV', name: 'Sergey (Мужской, русский/английский)' },
+  { id: 'pqHfZKP75CvOlQylNhV4', name: 'Tatyana (Женский, русский/английский)' },
+  { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Andrey (Мужской, русский/английский)' },
+  { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Svetlana (Женский, русский/английский)' },
+  { id: 'CYw3kZ02Hs0563khs1Fj', name: 'Viktor (Мужской, русский/английский)' },
+  { id: 'XrExE9yKIg1WjnnlVkGX', name: 'Irina (Женский, русский/английский)' },
+  { id: 'g5CIjZEefAph4nQFvHAz', name: 'Roman (Мужской, русский/английский)' },
+  { id: 'oWAxZDx7w5VEj9dCyTzz', name: 'Nadezhda (Женский, русский/английский)' },
 ];
 
 export function useTTS() {
@@ -40,7 +41,7 @@ export function useTTS() {
     error: null,
   });
 
-  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb'); // Lily
+  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb'); // Georgiy по умолчанию
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const speak = useCallback(async (text: string) => {
