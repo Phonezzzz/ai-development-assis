@@ -48,12 +48,8 @@ const AVAILABLE_MODELS: ModelOption[] = [
 ];
 
 const AGENT_TOOLS = [
-  { id: 'code-generator', name: 'Генератор кода', icon: '⚡', description: 'Автогенерация кода' },
-  { id: 'file-analyzer', name: 'Анализ файлов', icon: '📄', description: 'Анализ и обработка файлов' },
   { id: 'web-search', name: 'Веб поиск', icon: '🔍', description: 'Поиск информации в интернете' },
-  { id: 'code-reviewer', name: 'Ревью кода', icon: '👁️', description: 'Проверка качества кода' },
-  { id: 'documentation', name: 'Документация', icon: '📚', description: 'Генерация документации' },
-  { id: 'testing', name: 'Тестирование', icon: '🧪', description: 'Создание тестов' },
+  { id: 'add-new-tool', name: '+ Добавить инструмент', icon: '➕', description: 'Создать новый инструмент' },
 ];
 
 export function ModernChatInput({ onSubmit, placeholder = "Спросите что угодно или упомяните пространство", disabled }: ModernChatInputProps) {
@@ -163,6 +159,11 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                   <DropdownMenuItem
                     key={tool.id}
                     onClick={() => {
+                      if (tool.id === 'add-new-tool') {
+                        // Handle new tool creation
+                        console.log('Adding new tool...');
+                        return;
+                      }
                       setSelectedTools(prev => 
                         (prev || []).includes(tool.id) 
                           ? (prev || []).filter(id => id !== tool.id)
@@ -176,19 +177,13 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
                       <div className="font-medium">{tool.name}</div>
                       <div className="text-xs text-muted-foreground">{tool.description}</div>
                     </div>
-                    {(selectedTools || []).includes(tool.id) && (
+                    {(selectedTools || []).includes(tool.id) && tool.id !== 'add-new-tool' && (
                       <div className="w-2 h-2 bg-accent rounded-full" />
                     )}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Work Mode dropdown */}
-            <WorkModeSelector
-              selectedMode={workMode}
-              onModeSelect={setWorkMode}
-            />
 
             {/* Agents dropdown */}
             <AgentSelector
@@ -204,22 +199,10 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
-            className="pl-40 pr-28 py-3 text-sm bg-background border-input focus:border-accent transition-colors"
+            className="pl-32 pr-28 py-3 text-sm bg-background border-input focus:border-accent transition-colors"
           />
 
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-            {/* Attach file button */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleFileUpload}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-              title="Прикрепить файл"
-            >
-              <Paperclip size={16} />
-            </Button>
-
             {/* Voice recognition button */}
             <Button
               type="button"
@@ -237,6 +220,18 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               {isListening ? <MicrophoneSlash size={16} /> : <Microphone size={16} />}
             </Button>
 
+            {/* Attach file button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleFileUpload}
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+              title="Прикрепить файл"
+            >
+              <Paperclip size={16} />
+            </Button>
+
             {/* Submit button */}
             <Button
               type="submit"
@@ -251,6 +246,14 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
               <PaperPlaneRight size={16} />
             </Button>
           </div>
+        </div>
+
+        {/* Work Mode selector moved below */}
+        <div className="flex items-center gap-2">
+          <WorkModeSelector
+            selectedMode={workMode}
+            onModeSelect={setWorkMode}
+          />
         </div>
 
         {/* Status indicators */}
