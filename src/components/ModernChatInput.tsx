@@ -17,7 +17,7 @@ import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
-import { useVoiceSTT } from '@/hooks/use-voice-stt-fixed';
+import { useVoiceSTTFallback } from '@/hooks/use-voice-stt-fallback';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -65,8 +65,9 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
     voiceState, 
     startListening, 
     stopListening, 
-    isSupported 
-  } = useVoiceSTT();
+    isSupported,
+    supportDetails 
+  } = useVoiceSTTFallback();
 
   // Обновляем input при получении транскрипта
   useEffect(() => {
@@ -387,14 +388,25 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
         
         {/* Debug info for STT */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="text-xs text-muted-foreground">
-            STT поддержка: {isSupported ? '✅' : '❌'} | 
-            Web Speech API: {(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition ? '✅' : '❌'} |
-            MediaDevices: {navigator.mediaDevices ? '✅' : '❌'} |
-            getUserMedia: {typeof navigator.mediaDevices?.getUserMedia === 'function' ? '✅' : '❌'} |
-            Состояние: {voiceState.isListening ? 'Слушаю' : 'Ожидание'} |
-            Кнопка: {!isSupported ? 'Заблокирована' : 'Активна'} |
-            Транскрипт: "{voiceState.transcript}"
+          <div className="text-xs text-muted-foreground space-y-1">
+            <div>
+              STT поддержка: {isSupported ? '✅' : '❌'} | 
+              Web Speech API: {supportDetails?.hasSpeechRecognition ? '✅' : '❌'} |
+              MediaDevices: {supportDetails?.hasMediaDevices ? '✅' : '❌'} |
+              getUserMedia: {supportDetails?.hasGetUserMedia ? '✅' : '❌'}
+            </div>
+            <div>
+              Протокол: {supportDetails?.protocol || window.location.protocol} |
+              Состояние: {voiceState.isListening ? 'Слушаю' : voiceState.isProcessing ? 'Обработка' : 'Ожидание'} |
+              Кнопка: {!isSupported ? 'Заблокирована' : 'Активна'}
+            </div>
+            <div>
+              Транскрипт: "{voiceState.transcript}" |
+              Уверенность: {(voiceState.confidence * 100).toFixed(1)}%
+            </div>
+            <div className="text-xs opacity-75">
+              Браузер: {supportDetails?.userAgent?.slice(0, 50)}...
+            </div>
           </div>
         )}
       </form>
