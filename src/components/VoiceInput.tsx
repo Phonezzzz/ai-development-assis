@@ -31,6 +31,7 @@ export function VoiceInput({
 
   useEffect(() => {
     if (voiceState.transcript && !voiceState.isProcessing && !voiceState.isListening) {
+      console.log('VoiceInput: Устанавливаем транскрипт в поле ввода:', voiceState.transcript);
       setInputText(voiceState.transcript);
     }
   }, [voiceState.transcript, voiceState.isProcessing, voiceState.isListening]);

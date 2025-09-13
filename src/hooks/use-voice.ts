@@ -17,30 +17,49 @@ export function useVoiceRecognition() {
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
+        console.log('STT: Инициализация распознавания речи...');
+        
         const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
         
         if (SpeechRecognition) {
+          console.log('STT: API распознавания речи найден');
           const recognitionInstance = new SpeechRecognition();
           recognitionInstance.continuous = false;
           recognitionInstance.interimResults = true;
           recognitionInstance.lang = 'ru-RU'; // Changed to Russian
           
+          console.log('STT: Настройки применены:', {
+            continuous: recognitionInstance.continuous,
+            interimResults: recognitionInstance.interimResults,
+            lang: recognitionInstance.lang
+          });
+          
           recognitionRef.current = recognitionInstance;
+        } else {
+          console.warn('STT: API распознавания речи не поддерживается в этом браузере');
         }
       }
     } catch (error) {
-      console.warn('Speech API not available:', error);
+      console.warn('STT: Ошибка инициализации API распознавания речи:', error);
     }
   }, []);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     const recognition = recognitionRef.current;
     if (!recognition) {
       console.warn('Speech recognition not available');
+      alert('Распознавание речи не поддерживается в этом браузере');
       return;
     }
 
     try {
+      // Проверяем разрешение на микрофон
+      console.log('Запрашиваем разрешение на микрофон...');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Останавливаем поток, он нам нужен только для проверки разрешения
+      
+      console.log('Разрешение на микрофон получено, запускаем STT...');
+
       setVoiceState((prev) => ({
         ...prev,
         isListening: true,
@@ -48,11 +67,16 @@ export function useVoiceRecognition() {
         transcript: '',
       }));
 
+
+
       recognition.onresult = (event) => {
         try {
+          console.log('STT: Получен результат', event);
           const result = event.results[event.results.length - 1];
           const transcript = result.transcript;
           const confidence = result.confidence || 0;
+
+          console.log('STT: Транскрипт:', transcript, 'Уверенность:', confidence);
 
           setVoiceState((prev) => ({
             ...prev,
@@ -60,13 +84,39 @@ export function useVoiceRecognition() {
             confidence,
             isProcessing: !result.isFinal,
           }));
+
+          // Если результат финальный, автоматически останавливаем запись
+          if (result.isFinal) {
+            console.log('STT: Финальный результат получен');
+          }
         } catch (error) {
-          console.error('Error processing speech result:', error);
+          console.error('STT: Ошибка обработки результата:', error);
         }
       };
 
       recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
+        console.error('STT: Ошибка распознавания:', event.error, event);
+        let errorMessage = 'Ошибка распознавания речи: ';
+        
+        switch (event.error) {
+          case 'not-allowed':
+            errorMessage += 'Разрешение на микрофон отклонено';
+            break;
+          case 'no-speech':
+            errorMessage += 'Речь не обнаружена';
+            break;
+          case 'audio-capture':
+            errorMessage += 'Ошибка захвата аудио';
+            break;
+          case 'network':
+            errorMessage += 'Сетевая ошибка';
+            break;
+          default:
+            errorMessage += event.error;
+        }
+        
+        alert(errorMessage);
+        
         setVoiceState((prev) => ({
           ...prev,
           isListening: false,
@@ -75,6 +125,7 @@ export function useVoiceRecognition() {
       };
 
       recognition.onend = () => {
+        console.log('STT: Запись завершена');
         setVoiceState((prev) => ({
           ...prev,
           isListening: false,
@@ -82,9 +133,22 @@ export function useVoiceRecognition() {
         }));
       };
 
+      console.log('STT: Запускаем распознавание...');
       recognition.start();
     } catch (error) {
-      console.error('Failed to start speech recognition:', error);
+      console.error('STT: Не удалось запустить распознавание речи:', error);
+      
+      let errorMessage = 'Ошибка доступа к микрофону: ';
+      if (error.name === 'NotAllowedError') {
+        errorMessage += 'Разрешение отклонено. Проверьте настройки браузера.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage += 'Микрофон не найден.';
+      } else {
+        errorMessage += error.message;
+      }
+      
+      alert(errorMessage);
+      
       setVoiceState((prev) => ({
         ...prev,
         isListening: false,
