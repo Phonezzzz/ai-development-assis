@@ -5,6 +5,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ModernChatInput } from '@/components/ModernChatInput';
 import { MessageActions } from '@/components/MessageActions';
+import { STTDebug } from '@/components/STTDebug';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
@@ -118,6 +119,9 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
           ) : (
             <div className="messages-container">
               <div className="messages-list">
+                {/* Debug panel - remove in production */}
+                <STTDebug />
+                
                 <AnimatePresence initial={false}>
                   {messages.map((message, index) => (
                     <motion.div
