@@ -40,7 +40,7 @@ export function useTTS() {
     error: null,
   });
 
-  const [selectedVoice] = useKV<string>('selected-voice', 'pNInz6obpgDQGcFmaJgB');
+  const [selectedVoice, setSelectedVoice] = useKV<string>('selected-voice', 'JBFqnCBsd6RMkjVDRZzb'); // Lily
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const speak = useCallback(async (text: string) => {
@@ -50,6 +50,7 @@ export function useTTS() {
       // Stop any current playback
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.currentTime = 0;
         audioRef.current = null;
       }
 
@@ -61,11 +62,57 @@ export function useTTS() {
       });
 
       const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-      if (!apiKey) {
-        throw new Error('ElevenLabs API ключ не найден');
+      if (!apiKey || apiKey === 'your-elevenlabs-api-key-here') {
+        console.error('ElevenLabs API ключ не найден в переменных окружения');
+        
+        // Fallback to browser TTS if ElevenLabs is not available
+        try {
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ru-RU';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 0.8;
+            
+            utterance.onstart = () => {
+              setTTSState(prev => ({
+                ...prev,
+                isLoading: false,
+                isPlaying: true,
+              }));
+            };
+            
+            utterance.onend = () => {
+              setTTSState(prev => ({
+                ...prev,
+                isPlaying: false,
+                currentText: null,
+              }));
+            };
+            
+            utterance.onerror = () => {
+              setTTSState({
+                isPlaying: false,
+                isLoading: false,
+                currentText: null,
+                error: 'Ошибка браузерного TTS',
+              });
+            };
+            
+            speechSynthesis.speak(utterance);
+            return;
+          }
+        } catch (browserError) {
+          console.error('Browser TTS error:', browserError);
+        }
+        
+        throw new Error('ElevenLabs API ключ не найден. Проверьте .env файл и убедитесь что VITE_ELEVENLABS_API_KEY установлен правильно.');
       }
 
-      // Call ElevenLabs API
+      console.log('Using ElevenLabs with voice ID:', selectedVoice);
+      console.log('Text to convert (first 50 chars):', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
+
+      // Call ElevenLabs API with proper formatting
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}`, {
         method: 'POST',
         headers: {
@@ -77,41 +124,65 @@ export function useTTS() {
           text: text,
           model_id: 'eleven_multilingual_v2',
           voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.5,
+            stability: 0.6,
+            similarity_boost: 0.8,
             style: 0.0,
             use_speaker_boost: true
           }
         })
       });
 
+      console.log('ElevenLabs API response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('ElevenLabs API error response:', errorText);
+        
+        let errorMessage = `ElevenLabs API error ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.detail) {
+            errorMessage += `: ${errorData.detail.message || errorData.detail}`;
+          }
+        } catch (e) {
+          errorMessage += `: ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      console.log('Audio blob size:', audioBlob.size, 'bytes');
       
+      if (audioBlob.size === 0) {
+        throw new Error('Получен пустой аудио файл от ElevenLabs');
+      }
+
+      const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-      audio.onloadstart = () => {
+      // Set up event listeners before playing
+      audio.addEventListener('loadstart', () => {
+        console.log('Audio loading started');
         setTTSState(prev => ({
           ...prev,
           isLoading: true,
           isPlaying: false,
         }));
-      };
+      });
 
-      audio.oncanplay = () => {
+      audio.addEventListener('canplay', () => {
+        console.log('Audio ready to play');
         setTTSState(prev => ({
           ...prev,
           isLoading: false,
           isPlaying: true,
         }));
-      };
+      });
 
-      audio.onended = () => {
+      audio.addEventListener('ended', () => {
+        console.log('Audio playback ended');
         setTTSState(prev => ({
           ...prev,
           isPlaying: false,
@@ -119,9 +190,10 @@ export function useTTS() {
         }));
         URL.revokeObjectURL(audioUrl);
         audioRef.current = null;
-      };
+      });
 
-      audio.onerror = () => {
+      audio.addEventListener('error', (e) => {
+        console.error('Audio playback error:', e);
         setTTSState({
           isPlaying: false,
           isLoading: false,
@@ -130,9 +202,11 @@ export function useTTS() {
         });
         URL.revokeObjectURL(audioUrl);
         audioRef.current = null;
-      };
+      });
 
+      // Start playing
       await audio.play();
+      console.log('Audio playback started successfully');
 
     } catch (error) {
       console.error('TTS Error:', error);
@@ -173,5 +247,6 @@ export function useTTS() {
     isAvailable,
     voices: ELEVENLABS_VOICES,
     selectedVoice,
+    setSelectedVoice,
   };
 }

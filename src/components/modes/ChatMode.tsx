@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ModernChatInput } from '@/components/ModernChatInput';
-import { TTSControls } from '@/components/TTSControls';
+import { MessageActions } from '@/components/MessageActions';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceRecognition } from '@/hooks/use-voice';
@@ -201,7 +201,10 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
                           </div>
                           
                           {message.type === 'agent' && (
-                            <TTSControls text={message.content} />
+                            <MessageActions 
+                              message={message.content}
+                              messageId={message.id}
+                            />
                           )}
                         </div>
                       </Card>
