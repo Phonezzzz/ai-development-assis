@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STT Test</title>
+</head>
+<body>
+    <h1>STT Test</h1>
+    <button id="start">Start Recording</button>
+    <div id="result"></div>
+    <div id="status"></div>
+
+    <script>
+        function updateStatus(text) {
+            document.getElementById('status').innerText = text;
+        }
+
+        function updateResult(text) {
+            document.getElementById('result').innerText = text;
+        }
+
+        // Проверка поддержки
+        const hasWindow = typeof window !== 'undefined';
+        const hasSpeechRecognition = hasWindow && !!(((window).SpeechRecognition || (window).webkitSpeechRecognition));
+        const hasMediaDevices = !!navigator?.mediaDevices;
+        const hasGetUserMedia = hasMediaDevices && !!navigator.mediaDevices.getUserMedia;
+
+        updateStatus(`Window: ${hasWindow} | SpeechAPI: ${hasSpeechRecognition} | MediaDevices: ${hasMediaDevices} | getUserMedia: ${hasGetUserMedia}`);
+
+        if (!hasSpeechRecognition) {
+            updateResult('Speech Recognition не поддерживается');
+        } else {
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                recognition.lang = 'ru-RU';
+                
+                document.getElementById('start').onclick = function() {
+                    updateResult('Начинаем запись...');
+                    recognition.start();
+                };
+
+                recognition.onstart = function() {
+                    updateResult('Слушаю...');
+                };
+
+                recognition.onresult = function(event) {
+                    let transcript = '';
+                    for (let i = 0; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    updateResult('Результат: ' + transcript);
+                };
+
+                recognition.onerror = function(event) {
+                    updateResult('Ошибка: ' + event.error);
+                };
+
+                recognition.onend = function() {
+                    updateResult(prev => prev + ' (завершено)');
+                };
+
+            } catch (error) {
+                updateResult('Ошибка создания recognition: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

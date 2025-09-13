@@ -17,7 +17,7 @@ import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
-import { useVoiceSTT } from '@/hooks/use-voice-stt';
+import { useVoiceSTT } from '@/hooks/use-voice-stt-fixed';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -70,17 +70,11 @@ export function ModernChatInput({ onSubmit, placeholder = "Спросите чт
 
   // Обновляем input при получении транскрипта
   useEffect(() => {
-    if (voiceState.transcript && !voiceState.isProcessing) {
+    if (voiceState.transcript && !voiceState.isProcessing && !voiceState.isListening) {
       setInput(voiceState.transcript);
-      // Автоматически отправляем сообщение после завершения распознавания
-      setTimeout(() => {
-        if (voiceState.transcript.trim()) {
-          onSubmit(voiceState.transcript, workMode || 'ask', true);
-          setInput('');
-        }
-      }, 500);
+      // Не отправляем автоматически, позволяем пользователю решить
     }
-  }, [voiceState.transcript, voiceState.isProcessing, onSubmit, workMode]);
+  }, [voiceState.transcript, voiceState.isProcessing, voiceState.isListening]);
 
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();

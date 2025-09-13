@@ -1,4 +1,4 @@
-import { useVoiceSTT } from '@/hooks/use-voice-stt';
+import { useVoiceSTT } from '@/hooks/use-voice-stt-fixed';
 import { Card } from '@/components/ui/card';
 
 export function STTDebugInfo() {

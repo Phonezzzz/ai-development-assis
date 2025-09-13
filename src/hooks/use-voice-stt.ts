@@ -44,53 +44,33 @@ export function useVoiceSTT() {
     const supported = checkSupport();
     setIsSupported(supported);
     console.log('STT: Поддержка установлена:', supported);
+    
+    // Если поддержка есть, инициализируем сразу
+    if (supported && !isInitializedRef.current) {
+      console.log('STT: Запуск немедленной инициализации...');
+      try {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
+        if (SpeechRecognition) {
+          console.log('STT: API найден, создаём экземпляр...');
+          const recognition = new SpeechRecognition();
+          
+          recognition.continuous = false;
+          recognition.interimResults = true;
+          recognition.lang = 'ru-RU';
+          recognition.maxAlternatives = 1;
+          
+          recognitionRef.current = recognition;
+          isInitializedRef.current = true;
+          console.log('STT: Экземпляр создан и сохранён');
+        }
+      } catch (error) {
+        console.error('STT: Ошибка немедленной инициализации:', error);
+      }
+    }
   }, [checkSupport]);
 
-  // Инициализация Speech Recognition
-  useEffect(() => {
-    if (isInitializedRef.current || !isSupported) {
-      console.log('STT: Пропуск инициализации:', { 
-        isInitialized: isInitializedRef.current, 
-        isSupported 
-      });
-      return;
-    }
-    
-    try {
-      console.log('STT: Начало инициализации...');
-      
-      // Попробуем получить API
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
-      if (!SpeechRecognition) {
-        console.error('STT: API распознавания речи не найден');
-        return;
-      }
-      
-      console.log('STT: API распознавания речи найден, создаём экземпляр...');
-      const recognition = new SpeechRecognition();
-      
-      // Основные настройки
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'ru-RU';
-      recognition.maxAlternatives = 1;
-      
-      // Дополнительные настройки для лучшей работы
-      if ('grammars' in recognition) {
-        recognition.grammars = new (window as any).SpeechGrammarList();
-      }
-      
-      recognitionRef.current = recognition;
-      isInitializedRef.current = true;
-      
-      console.log('STT: Инициализация успешно завершена');
-      
-    } catch (error) {
-      console.error('STT: Критическая ошибка инициализации:', error);
-      isInitializedRef.current = false;
-    }
-  }, [isSupported]); // Зависимость от isSupported
+
 
   const startListening = useCallback(async () => {
     console.log('STT: Попытка запуска распознавания...');
