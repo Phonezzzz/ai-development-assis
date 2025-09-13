@@ -14,6 +14,7 @@ import { useVoiceRecognition } from '@/hooks/use-voice';
 import { useSmartContext } from '@/hooks/use-smart-context';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
 import { vectorService } from '@/lib/services/vector';
+import { llmService } from '@/lib/services/llm';
 import { toast } from 'sonner';
 
 function App() {
@@ -155,6 +156,38 @@ function App() {
           
           toast.success('Задача выполнена!');
         }
+      } else if (mode === 'ask') {
+        // Ask mode - direct LLM question answering
+        const llmResponse = await llmService.askQuestion(text);
+        
+        const assistantMessage = createMessage(
+          llmResponse,
+          'agent'
+        );
+        
+        setMessages((prev) => [...(prev || []), assistantMessage]);
+        
+        // Store assistant response in vector database
+        try {
+          await vectorService.addDocument({
+            id: assistantMessage.id,
+            content: assistantMessage.content,
+            metadata: {
+              type: 'agent_message',
+              timestamp: assistantMessage.timestamp.toISOString(),
+              isVoice: isVoice || false,
+              mode: 'ask',
+            },
+          });
+        } catch (error) {
+          console.error('Error storing assistant message in vector DB:', error);
+        }
+        
+        if (isVoice) {
+          speak(llmResponse);
+        }
+        
+        toast.success('Ответ получен!');
       }
     } catch (error) {
       console.error('Error processing message:', error);

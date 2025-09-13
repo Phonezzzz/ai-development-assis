@@ -8,13 +8,15 @@ import {
 import { cn } from '@/lib/utils';
 import { 
   Brain,
-  Lightning
+  Lightning,
+  ChatCircle
 } from '@phosphor-icons/react';
 import { WorkMode } from '@/lib/types';
 
 const WORK_MODES = [
   { id: 'plan', name: 'План', icon: Brain, description: 'Создание детального плана' },
   { id: 'act', name: 'Действие', icon: Lightning, description: 'Выполнение задач' },
+  { id: 'ask', name: 'Вопрос', icon: ChatCircle, description: 'Простой вопрос к ИИ' },
 ];
 
 interface WorkModeSelectorProps {
