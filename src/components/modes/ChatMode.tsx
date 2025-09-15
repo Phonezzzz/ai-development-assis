@@ -9,7 +9,7 @@ import { STTDebug } from '@/components/STTDebug';
 import { ApiConfigurationWarning } from '@/components/ApiConfigurationWarning';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
-import { useVoiceUnified } from '@/hooks/use-voice-unified';
+import { useVoiceSimple } from '@/hooks/use-voice-simple';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';

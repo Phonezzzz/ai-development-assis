@@ -17,7 +17,7 @@ import { WorkModeSelector } from '@/components/WorkModeSelector';
 import { WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { useModelSelection } from '@/hooks/use-model-selection';
-import { useVoiceUnified } from '@/hooks/use-voice-unified';
+import { useVoiceSimple } from '@/hooks/use-voice-simple';
 import { cn } from '@/lib/utils';
 import { 
   PaperPlaneRight, 
@@ -59,14 +59,14 @@ export function ModernChatInput({
   // Model selection hook
   const { availableModels, selectedModel, selectModel, isLoading: modelsLoading } = useModelSelection();
 
-  // Используем унифицированный хук для распознавания речи
+  // Используем упрощенный хук для распознавания речи
   const { 
     voiceState, 
     startListening, 
     stopListening, 
     isSupported,
     supportDetails,
-  } = useVoiceUnified();
+  } = useVoiceSimple();
 
   // Определяем метод STT
   const currentSTTState = voiceState;
@@ -74,16 +74,16 @@ export function ModernChatInput({
 
   // Обновляем input при получении транскрипта - предотвращаем циклы
   useEffect(() => {
-    if (currentSTTState.transcript.trim() && currentSTTState.transcript !== input) {
-      setInput(currentSTTState.transcript.trim());
+    if (voiceState.transcript.trim() && voiceState.transcript !== input) {
+      setInput(voiceState.transcript.trim());
     }
-  }, [currentSTTState.transcript, input]);
+  }, [voiceState.transcript, input]);
 
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim() || disabled) return;
     
-    const isVoiceInput = currentSTTState.isListening;
+    const isVoiceInput = voiceState.isListening;
     
     onSubmit(input, workMode || 'plan', isVoiceInput);
     setInput('');
@@ -91,26 +91,21 @@ export function ModernChatInput({
 
   // Debug информация - упрощено чтобы избежать циклов
   useEffect(() => {
-    const debugInfo = {
-      isSTTAvailable,
-      method: currentSTTState.method,
-      isListening: currentSTTState.isListening,
-      hasTranscript: !!currentSTTState.transcript,
-      error: currentSTTState.error
-    };
-    console.log('STT Debug Info:', debugInfo);
-  }, [
-    isSTTAvailable, 
-    currentSTTState.method, 
-    currentSTTState.isListening, 
-    currentSTTState.error
-  ]);
+    if (showDebugMode) {
+      console.log('STT Debug Info:', {
+        isSupported,
+        isListening: voiceState.isListening,
+        hasTranscript: !!voiceState.transcript,
+        error: voiceState.error
+      });
+    }
+  }, [showDebugMode, isSupported, voiceState.isListening, voiceState.error]);
 
   // Функция для переключения голосового ввода
   const toggleVoiceRecognition = useCallback(async () => {
-    console.log('Кнопка STT нажата! Поддержка:', isSTTAvailable ? 'Да' : 'Нет');
+    console.log('Кнопка STT нажата! Поддержка:', isSupported ? 'Да' : 'Нет');
     
-    if (!isSTTAvailable) {
+    if (!isSupported) {
       return;
     }
 
@@ -119,14 +114,14 @@ export function ModernChatInput({
     } catch (error) {
       console.error('Ошибка при запуске STT:', error);
     }
-  }, [isSTTAvailable, startListening]);
+  }, [isSupported, startListening]);
 
   // Зависимости для переключения - упрощено
   useEffect(() => {
-    if (currentSTTState.transcript && currentSTTState.transcript !== input) {
-      console.log('STT transcript received:', currentSTTState.transcript);
+    if (voiceState.transcript && voiceState.transcript !== input) {
+      console.log('STT transcript received:', voiceState.transcript);
     }
-  }, [currentSTTState.transcript, input]);
+  }, [voiceState.transcript, input]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -184,17 +179,17 @@ export function ModernChatInput({
         <Card className="p-4 bg-muted/50 text-sm font-mono">
           <div className="space-y-1">
             <div>
-              STT поддержка: {isSTTAvailable ? '✅' : '❌'} | 
+              STT поддержка: {isSupported ? '✅' : '❌'} | 
               Web Speech API: {supportDetails.hasSpeechRecognition ? '✅' : '❌'} | 
               MediaDevices: {supportDetails.hasMediaDevices ? '✅' : '❌'} | 
               getUserMedia: {supportDetails.hasGetUserMedia ? '✅' : '❌'} | 
-              Состояние: {currentSTTState.isListening ? 'Слушает' : currentSTTState.isProcessing ? 'Обрабатывает' : 'Ожидание'} | 
-              Кнопка: {isSTTAvailable ? 'Доступна' : 'Заблокирована'}
+              Состояние: {voiceState.isListening ? 'Слушает' : voiceState.isProcessing ? 'Обрабатывает' : 'Ожидание'} | 
+              Кнопка: {isSupported ? 'Доступна' : 'Заблокирована'}
             </div>
             <div>
-              Транскрипт: "{currentSTTState.transcript}" | 
-              Уверенность: {(currentSTTState.confidence * 100).toFixed(1)}%
-              {currentSTTState.error && ` | Ошибка: ${currentSTTState.error}`}
+              Транскрипт: "{voiceState.transcript}" | 
+              Уверенность: {(voiceState.confidence * 100).toFixed(1)}%
+              {voiceState.error && ` | Ошибка: ${voiceState.error}`}
             </div>
             <div>
               Браузер: {supportDetails.userAgent.substring(0, 50)}... | 
@@ -405,19 +400,19 @@ export function ModernChatInput({
               variant="ghost"
               size="sm"
               onClick={toggleVoiceRecognition}
-              disabled={!isSTTAvailable}
+              disabled={!isSupported}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-accent/20",
-                currentSTTState.isListening && "bg-accent text-accent-foreground",
-                !isSTTAvailable && "opacity-50 cursor-not-allowed"
+                voiceState.isListening && "bg-accent text-accent-foreground",
+                !isSupported && "opacity-50 cursor-not-allowed"
               )}
               title={
-                isSTTAvailable 
+                isSupported 
                   ? "Нажмите для голосового ввода"
                   : "Голосовой ввод недоступен в этом браузере"
               }
             >
-              {currentSTTState.isListening ? (
+              {voiceState.isListening ? (
                 <MicrophoneSlash size={16} />
               ) : (
                 <Microphone size={16} />
@@ -447,7 +442,7 @@ export function ModernChatInput({
         </div>
 
         {/* Индикатор голосового ввода */}
-        {currentSTTState.isListening && (
+        {voiceState.isListening && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent/20">
             <div className="h-full bg-accent animate-pulse" />
           </div>
