@@ -244,7 +244,7 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [createMessage, ttsSpeak]); // Only include stable functions
+  }, []); // Remove dependencies to prevent React 19 issues
 
   const handleConfirmPlan = useCallback(() => {
     confirmPlan();
