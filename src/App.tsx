@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -244,7 +244,7 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [createPlan, createMessage, awaitingConfirmation, currentPlan, confirmPlan, executePlan, addMessageToContext, ttsSpeak]);
+  }, [createMessage, ttsSpeak]); // Only include stable functions
 
   const handleConfirmPlan = useCallback(() => {
     confirmPlan();
@@ -254,7 +254,7 @@ function App() {
   const handleClearHistory = useCallback(() => {
     setMessages([]);
     toast.success('История чата очищена');
-  }, []);
+  }, [setMessages]);
 
   const renderMode = () => {
     switch (currentMode) {

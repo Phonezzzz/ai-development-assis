@@ -53,7 +53,7 @@ export function useModelSelection() {
 
   useEffect(() => {
     loadModels();
-  }, [loadModels]);
+  }, []); // Remove loadModels from dependencies to prevent infinite loop
 
   const getProviderFromId = (id: string): string => {
     if (id.includes('openai/')) return 'OpenAI';
