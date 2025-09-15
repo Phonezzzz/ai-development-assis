@@ -73,8 +73,9 @@ export function useTTS() {
       // Get API key from environment
       const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
       
-      // If no API key, use browser TTS as fallback
-      if (!apiKey || apiKey === 'sk_298884ecbf7f5cbc3c852e9da181b479693091ef782b42e4') {
+      // If no API key or it's the placeholder, use browser TTS as fallback
+      if (!apiKey || apiKey === 'your_elevenlabs_api_key_here') {
+        console.log('Using browser TTS as fallback (no ElevenLabs key)');
         return await browserTTS(text);
       }
 
@@ -241,7 +242,8 @@ export function useTTS() {
   }, []);
 
   const isAvailable = useCallback(() => {
-    return !!import.meta.env.VITE_ELEVENLABS_API_KEY;
+    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
+    return !!(apiKey && apiKey !== 'your_elevenlabs_api_key_here');
   }, []);
 
   return {

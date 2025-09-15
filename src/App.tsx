@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { ModeSelector } from '@/components/ModeSelector';
 import { ChatHistory } from '@/components/ChatHistory';
 import { SettingsDialog } from '@/components/SettingsDialog';
+import { VoiceTestPanel } from '@/components/VoiceTestPanel';
 import { ChatMode } from '@/components/modes/ChatMode';
 import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
 import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
 import { useTTS } from '@/hooks/use-tts';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
 import { llmService } from '@/lib/services/llm';
-import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, TestTube } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
   const [currentQuery, setCurrentQuery] = useState('');
   const [currentWorkMode, setCurrentWorkMode] = useState<WorkMode>('act');
   const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>('sidebar-collapsed', false);
+  const [showVoiceTest, setShowVoiceTest] = useState(false);
   
   const { speak: ttsSpeak } = useTTS();
 
@@ -84,6 +86,10 @@ function App() {
   }, [setMessages]);
 
   const renderMode = () => {
+    if (showVoiceTest) {
+      return <VoiceTestPanel />;
+    }
+
     switch (currentMode) {
       case 'chat':
         return (
@@ -130,11 +136,22 @@ function App() {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowVoiceTest(!showVoiceTest)}
+              className={`border-border hover:border-accent ${showVoiceTest ? 'bg-accent text-accent-foreground' : ''}`}
+              title="Тестирование голосовых функций"
+            >
+              <TestTube size={16} />
+            </Button>
             <SettingsDialog />
-            <ModeSelector
-              currentMode={currentMode || 'chat'}
-              onModeChange={setCurrentMode}
-            />
+            {!showVoiceTest && (
+              <ModeSelector
+                currentMode={currentMode || 'chat'}
+                onModeChange={setCurrentMode}
+              />
+            )}
           </div>
         </div>
       </header>
@@ -142,9 +159,9 @@ function App() {
       {/* Main Content */}
       <div className="flex-1 flex min-h-0">
         {/* Sidebar */}
-        <aside className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10 flex-shrink-0 overflow-hidden`}>
+        <aside className={`${sidebarCollapsed || showVoiceTest ? 'w-0' : 'w-80'} transition-all duration-300 border-r bg-card/80 backdrop-blur-sm flex flex-col relative z-10 flex-shrink-0 overflow-hidden`}>
           <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-            {!sidebarCollapsed && (
+            {!sidebarCollapsed && !showVoiceTest && (
               <>
                 <ChatHistory
                   messages={messages || []}
@@ -156,20 +173,22 @@ function App() {
         </aside>
 
         {/* Sidebar Toggle Button */}
-        <div className="flex flex-col justify-center relative z-10">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="rounded-l-none border-l-0 h-12 w-6 p-0 border-border hover:border-accent"
-          >
-            {sidebarCollapsed ? (
-              <CaretRight size={16} />
-            ) : (
-              <CaretLeft size={16} />
-            )}
-          </Button>
-        </div>
+        {!showVoiceTest && (
+          <div className="flex flex-col justify-center relative z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="rounded-l-none border-l-0 h-12 w-6 p-0 border-border hover:border-accent"
+            >
+              {sidebarCollapsed ? (
+                <CaretRight size={16} />
+              ) : (
+                <CaretLeft size={16} />
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Main View */}
         <main className="flex-1 min-w-0 bg-transparent relative z-10 flex flex-col">
