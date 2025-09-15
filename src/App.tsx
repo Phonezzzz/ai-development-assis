@@ -58,6 +58,11 @@ function App() {
     };
   }, []);
 
+  const handleConfirmPlan = useCallback(() => {
+    confirmPlan();
+    toast.success('План подтвержден! Готов к выполнению.');
+  }, [confirmPlan]);
+
   const handleSendMessage = useCallback(async (text: string, mode: WorkMode, isVoice?: boolean) => {
     if (!text.trim()) return;
 
@@ -97,7 +102,7 @@ function App() {
         if (awaitingConfirmation && currentPlan) {
           // Уже есть план в ожидании - обрабатываем ответ пользователя
           if (text.toLowerCase().includes('да') || text.toLowerCase().includes('подтверждаю') || text.toLowerCase().includes('ок') || text.toLowerCase().includes('yes')) {
-            handleConfirmPlan();
+            confirmPlan();
             const confirmationResponse = createMessage(
               'План подтверждён! Перейдите в режим "Действие" чтобы начать выполнение или дайте команду в режиме "Действие".',
               'agent',
@@ -244,12 +249,18 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, []); // Remove dependencies to prevent React 19 issues
-
-  const handleConfirmPlan = useCallback(() => {
-    confirmPlan();
-    toast.success('План подтвержден! Готов к выполнению.');
-  }, [confirmPlan]);
+  }, [
+    createMessage,
+    setMessages,
+    addMessageToContext,
+    awaitingConfirmation,
+    currentPlan,
+    createPlan,
+    confirmPlan,
+    executePlan,
+    setAwaitingConfirmation,
+    ttsSpeak
+  ]);
 
   const handleClearHistory = useCallback(() => {
     setMessages([]);
