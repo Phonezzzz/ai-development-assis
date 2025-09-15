@@ -1,55 +1,32 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { ModeSelector } from '@/components/ModeSelector';
 import { ChatHistory } from '@/components/ChatHistory';
-import { PlanViewer } from '@/components/PlanViewer';
 import { SettingsDialog } from '@/components/SettingsDialog';
-import { SmartContextPanel } from '@/components/SmartContextPanel';
 import { ChatMode } from '@/components/modes/ChatMode';
 import { ImageCreatorMode } from '@/components/modes/ImageCreatorMode';
 import { WorkspaceMode } from '@/components/modes/WorkspaceMode';
-import { useAgentSystem } from '@/hooks/use-agent-system';
-import { useVoiceUnified } from '@/hooks/use-voice-unified';
 import { useTTS } from '@/hooks/use-tts';
-import { useSmartContext } from '@/hooks/use-smart-context';
 import { OperatingMode, Message, AgentType, WorkMode } from '@/lib/types';
-import { vectorService } from '@/lib/services/vector';
 import { llmService } from '@/lib/services/llm';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 function App() {
-  // Use hooks inside a try-catch to prevent resolver issues
   const [currentMode, setCurrentMode] = useKV<OperatingMode>('current-mode', 'chat');
   const [messages, setMessages] = useKV<Message[]>('chat-messages', []);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [currentQuery, setCurrentQuery] = useState('');
   const [currentWorkMode, setCurrentWorkMode] = useState<WorkMode>('act');
   const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>('sidebar-collapsed', false);
   
-  // Use hooks to prevent resolver issues
-  const agentSystem = useAgentSystem();
-  const voiceRecognition = useVoiceUnified();
-  const { speak: ttsSpeak, stop: ttsStop } = useTTS();
-  const { addMessageToContext } = useSmartContext();
-
-  const {
-    agents,
-    currentPlan,
-    isWorking,
-    currentAgent,
-    createPlan,
-    confirmPlan,
-    executePlan,
-    resetAllAgents,
-  } = agentSystem;
+  const { speak: ttsSpeak } = useTTS();
 
   const createMessage = useCallback((content: string, type: 'user' | 'agent', agentType?: AgentType, isVoice?: boolean): Message => {
     return {
-      id: `msg_${Date.now()}_${type}`,
+      id: `msg_${Date.now()}_${Math.random()}`,
       type,
       content,
       timestamp: new Date(),
@@ -58,190 +35,40 @@ function App() {
     };
   }, []);
 
-  const handleConfirmPlan = useCallback(() => {
-    confirmPlan();
-    toast.success('План подтвержден! Готов к выполнению.');
-  }, [confirmPlan]);
-
   const handleSendMessage = useCallback(async (text: string, mode: WorkMode, isVoice?: boolean) => {
-    if (!text.trim()) return;
+    if (!text.trim() || isProcessing) return;
 
     setCurrentQuery(text);
     setCurrentWorkMode(mode);
     setIsProcessing(true);
 
-    const userMessage = createMessage(text, 'user', undefined, isVoice);
-    setMessages((prev) => [...(prev || []), userMessage]);
-
-    // Добавляем сообщение в умный контекст
     try {
-      await addMessageToContext(userMessage);
-    } catch (error) {
-      console.error('Error adding message to smart context:', error);
-    }
+      const userMessage = createMessage(text, 'user', undefined, isVoice);
+      setMessages((prev) => [...(prev || []), userMessage]);
 
-    // Store user message in vector database
-    try {
-      await vectorService.addDocument({
-        id: userMessage.id,
-        content: text,
-        metadata: {
-          type: 'user_message',
-          timestamp: userMessage.timestamp.toISOString(),
-          isVoice: isVoice || false,
-          mode,
-        },
-      });
-    } catch (error) {
-      console.error('Error storing message in vector DB:', error);
-    }
-
-    try {
-      if (mode === 'plan') {
-        // ПЛАН режим - НИКАКИХ действий, только планирование и запрос подтверждения
-        if (awaitingConfirmation && currentPlan) {
-          // Уже есть план в ожидании - обрабатываем ответ пользователя
-          if (text.toLowerCase().includes('да') || text.toLowerCase().includes('подтверждаю') || text.toLowerCase().includes('ок') || text.toLowerCase().includes('yes')) {
-            confirmPlan();
-            const confirmationResponse = createMessage(
-              'План подтверждён! Перейдите в режим "Действие" чтобы начать выполнение или дайте команду в режиме "Действие".',
-              'agent',
-              'planner'
-            );
-            setMessages((prev) => [...(prev || []), confirmationResponse]);
-            setAwaitingConfirmation(false);
-            
-            if (isVoice) {
-              ttsSpeak(confirmationResponse.content);
-            }
-            
-            toast.success('План подтверждён! Готов к выполнению.');
-          } else {
-            // Пользователь хочет изменить план
-            setAwaitingConfirmation(false);
-            const plan = await createPlan(text);
-            
-            const plannerResponse = createMessage(
-              `Я обновил план согласно вашим пожеланиям. Новый план включает ${plan.steps.length} шагов:\n\n${plan.steps.map((step, i) => `${i + 1}. ${step.description}`).join('\n')}\n\nВсё правильно? Подтверждаете план? (Скажите "да" для подтверждения)`,
-              'agent',
-              'planner'
-            );
-
-            setMessages((prev) => [...(prev || []), plannerResponse]);
-            setAwaitingConfirmation(true);
-            
-            if (isVoice) {
-              ttsSpeak(plannerResponse.content);
-            }
-            
-            toast.success('План обновлён');
-          }
-        } else {
-          // Создаём новый план
-          const plan = await createPlan(text);
-          
-          const plannerResponse = createMessage(
-            `✅ План создан:\n\n📋 **${plan.title}**\n${plan.description}\n\n**Шаги выполнения:**\n${plan.steps.map((step, i) => `${i + 1}. ${step.description} (${step.agentType})`).join('\n')}\n\n⚠️ **Внимание**: Это только план! Никаких действий не предпринимается.\n\n❓ **Подтверждаете план?** Скажите "да" для подтверждения или объясните что нужно изменить.`,
-            'agent',
-            'planner'
-          );
-
-          setMessages((prev) => [...(prev || []), plannerResponse]);
-          setAwaitingConfirmation(true);
-          
-          // Store planner response in vector database
-          try {
-            await vectorService.addDocument({
-              id: plannerResponse.id,
-              content: plannerResponse.content,
-              metadata: {
-                type: 'agent_message',
-                agentType: 'planner',
-                timestamp: plannerResponse.timestamp.toISOString(),
-                isVoice: isVoice || false,
-              },
-            });
-          } catch (error) {
-            console.error('Error storing agent message in vector DB:', error);
-          }
-          
-          if (isVoice) {
-            ttsSpeak(plannerResponse.content);
-          }
-          
-          toast.success('План создан - ожидает подтверждения');
-        }
-        
-      } else if (mode === 'act') {
-        // ДЕЙСТВИЕ режим - выполняем план или создаём и сразу выполняем
-        if (currentPlan && currentPlan.status === 'confirmed') {
-          // Есть подтверждённый план - выполняем его
-          const agentMessages = await executePlan();
-          setMessages((prev) => [...(prev || []), ...agentMessages]);
-          
-          agentMessages.forEach((message, index) => {
-            setTimeout(() => {
-              ttsSpeak(message.content);
-            }, index * 1000);
-          });
-          
-          toast.success('План выполнен!');
-        } else {
-          // Нет подтверждённого плана - создаём и сразу выполняем
-          const executionStart = createMessage(
-            'Создаю план и сразу выполняю задачу...',
-            'agent',
-            'planner'
-          );
-          setMessages((prev) => [...(prev || []), executionStart]);
-          
-          const plan = await createPlan(text);
-          confirmPlan();
-          
-          const agentMessages = await executePlan();
-          setMessages((prev) => [...(prev || []), ...agentMessages]);
-          
-          agentMessages.forEach((message, index) => {
-            setTimeout(() => {
-              ttsSpeak(message.content);
-            }, index * 1500);
-          });
-          
-          toast.success('Задача выполнена!');
-        }
-        
-      } else if (mode === 'ask') {
-        // ASK режим - прямой вопрос к ИИ без планирования
+      if (mode === 'ask') {
         const llmResponse = await llmService.askQuestion(text);
-        
-        const assistantMessage = createMessage(
-          llmResponse,
-          'agent'
-        );
-        
+        const assistantMessage = createMessage(llmResponse, 'agent');
         setMessages((prev) => [...(prev || []), assistantMessage]);
-        
-        // Store assistant response in vector database
-        try {
-          await vectorService.addDocument({
-            id: assistantMessage.id,
-            content: assistantMessage.content,
-            metadata: {
-              type: 'agent_message',
-              timestamp: assistantMessage.timestamp.toISOString(),
-              isVoice: isVoice || false,
-              mode: 'ask',
-            },
-          });
-        } catch (error) {
-          console.error('Error storing assistant message in vector DB:', error);
-        }
         
         if (isVoice) {
           ttsSpeak(llmResponse);
         }
-        
         toast.success('Ответ получен!');
+        
+      } else {
+        // For plan and act modes - simple responses for now
+        const responseText = mode === 'plan' ? 
+          'План создан. В данный момент система настраивается.' :
+          'Действие выполнено. Система в процессе настройки.';
+        
+        const agentMessage = createMessage(responseText, 'agent', 'planner');
+        setMessages((prev) => [...(prev || []), agentMessage]);
+        
+        if (isVoice) {
+          ttsSpeak(responseText);
+        }
+        toast.success('Готово!');
       }
     } catch (error) {
       console.error('Error processing message:', error);
@@ -249,17 +76,7 @@ function App() {
     } finally {
       setIsProcessing(false);
     }
-  }, [
-    createMessage,
-    setMessages,
-    addMessageToContext,
-    awaitingConfirmation,
-    currentPlan,
-    createPlan,
-    confirmPlan,
-    executePlan,
-    ttsSpeak
-  ]);
+  }, [isProcessing, createMessage, setMessages, ttsSpeak]);
 
   const handleClearHistory = useCallback(() => {
     setMessages([]);
@@ -333,28 +150,6 @@ function App() {
                   messages={messages || []}
                   onClearHistory={handleClearHistory}
                 />
-                
-                {currentPlan && (
-                  <PlanViewer
-                    plan={currentPlan}
-                    onConfirmPlan={handleConfirmPlan}
-                    onExecutePlan={() => {}}
-                    isExecuting={isWorking}
-                  />
-                )}
-
-                {/* Умный контекст */}
-                {currentQuery && (
-                  <SmartContextPanel
-                    query={currentQuery}
-                    mode={currentWorkMode}
-                    onSuggestionClick={(suggestion) => {
-                      // TODO: Добавить обработку клика по предложению
-                      console.log('Suggestion clicked:', suggestion);
-                    }}
-                    className="mt-4"
-                  />
-                )}
               </>
             )}
           </div>

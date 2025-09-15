@@ -24,15 +24,21 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [workMode, setWorkMode] = useState<WorkMode>('plan');
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive - memoized to prevent loops
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'end'
-      });
-    }
-  }, [messages]);
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'end'
+        });
+      }
+    };
+    
+    // Only scroll if messages length changed
+    const timeoutId = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timeoutId);
+  }, [messages.length]);
 
   // Typing indicator animation
   const TypingIndicator = () => (

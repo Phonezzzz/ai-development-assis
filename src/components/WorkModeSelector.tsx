@@ -1,84 +1,64 @@
 import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import { 
-  Brain,
-  Lightning,
-  ChatCircle
-} from '@phosphor-icons/react';
+import { Badge } from '@/components/ui/badge';
 import { WorkMode } from '@/lib/types';
-
-const WORK_MODES = [
-  { 
-    id: 'plan', 
-    name: 'План', 
-    icon: Brain, 
-    description: 'Создаёт детальный план без выполнения. Запрашивает подтверждение пользователя.' 
-  },
-  { 
-    id: 'act', 
-    name: 'Действие', 
-    icon: Lightning, 
-    description: 'Выполняет задачи по подтверждённому плану или создаёт план и сразу исполняет.' 
-  },
-  { 
-    id: 'ask', 
-    name: 'Вопрос', 
-    icon: ChatCircle, 
-    description: 'Простой вопрос к ИИ без планирования и агентов.' 
-  },
-];
+import { Brain, Sparkle, Robot } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 
 interface WorkModeSelectorProps {
-  selectedMode?: WorkMode;
+  selectedMode: WorkMode;
   onModeSelect: (mode: WorkMode) => void;
-  className?: string;
+  disabled?: boolean;
 }
 
-export function WorkModeSelector({ selectedMode, onModeSelect, className }: WorkModeSelectorProps) {
-  const currentMode = WORK_MODES.find(mode => mode.id === selectedMode);
+export function WorkModeSelector({ selectedMode, onModeSelect, disabled = false }: WorkModeSelectorProps) {
+  const modes = [
+    {
+      id: 'plan' as WorkMode,
+      name: 'План',
+      icon: Brain,
+      description: 'Создать план без выполнения',
+      color: 'bg-blue-500'
+    },
+    {
+      id: 'act' as WorkMode,
+      name: 'Действие',
+      icon: Sparkle,
+      description: 'Выполнить задачу сразу',
+      color: 'bg-green-500'
+    },
+    {
+      id: 'ask' as WorkMode,
+      name: 'Спросить',
+      icon: Robot,
+      description: 'Задать вопрос ИИ',
+      color: 'bg-purple-500'
+    }
+  ];
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className={cn(
-            "h-6 w-6 p-0 bg-muted/50 hover:bg-muted",
-            className
-          )}
-          title={`Режим: ${currentMode?.name || 'Не выбран'}`}
-        >
-          {currentMode?.icon ? <currentMode.icon size={14} /> : <Brain size={14} />}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        {WORK_MODES.map((mode) => (
-          <DropdownMenuItem
+    <div className="flex gap-1 p-1 bg-muted/30 rounded-lg border">
+      {modes.map((mode) => {
+        const Icon = mode.icon;
+        const isSelected = selectedMode === mode.id;
+        
+        return (
+          <Button
             key={mode.id}
-            onClick={() => onModeSelect(mode.id as WorkMode)}
+            variant={isSelected ? "default" : "ghost"}
+            size="sm"
+            disabled={disabled}
+            onClick={() => onModeSelect(mode.id)}
             className={cn(
-              "flex items-start gap-3 p-3 cursor-pointer",
-              selectedMode === mode.id && "bg-accent"
+              "flex items-center gap-2 text-xs h-8 px-3",
+              isSelected && "bg-accent text-accent-foreground shadow-sm"
             )}
+            title={mode.description}
           >
-            <mode.icon size={16} />
-            <div className="flex-1">
-              <div className="font-medium">{mode.name}</div>
-              <div className="text-xs text-muted-foreground">{mode.description}</div>
-            </div>
-            {selectedMode === mode.id && (
-              <div className="w-2 h-2 bg-accent rounded-full" />
-            )}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <Icon size={14} />
+            <span>{mode.name}</span>
+          </Button>
+        );
+      })}
+    </div>
   );
 }

@@ -37,10 +37,7 @@ export function ModeSelector({ currentMode, onModeChange }: ModeSelectorProps) {
           key={mode.id}
           variant={currentMode === mode.id ? 'default' : 'ghost'}
           size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            onModeChange(mode.id);
-          }}
+          onClick={() => onModeChange(mode.id)}
           className={cn(
             "flex items-center gap-2 transition-all",
             currentMode === mode.id 

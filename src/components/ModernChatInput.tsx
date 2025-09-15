@@ -72,12 +72,12 @@ export function ModernChatInput({
   const currentSTTState = voiceState;
   const isSTTAvailable = isSupported;
 
-  // Обновляем input при получении транскрипта
+  // Обновляем input при получении транскрипта - предотвращаем циклы
   useEffect(() => {
-    if (currentSTTState.transcript.trim()) {
+    if (currentSTTState.transcript.trim() && currentSTTState.transcript !== input) {
       setInput(currentSTTState.transcript.trim());
     }
-  }, [currentSTTState.transcript]);
+  }, [currentSTTState.transcript, input]);
 
   const handleSubmit = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
@@ -89,17 +89,22 @@ export function ModernChatInput({
     setInput('');
   }, [input, workMode, onSubmit, disabled, currentSTTState.isListening]);
 
-  // Debug информация
+  // Debug информация - упрощено чтобы избежать циклов
   useEffect(() => {
-    console.log('STT Debug Info:');
-    console.log('isSTTAvailable:', isSTTAvailable);
-    console.log('supportDetails:', supportDetails);
-    console.log('currentSTTState:', currentSTTState);
-    
-    if (currentSTTState.isListening && currentSTTState.transcript) {
-      console.log('Получен транскрипт:', currentSTTState.transcript);
-    }
-  }, [isSTTAvailable, supportDetails, currentSTTState]);
+    const debugInfo = {
+      isSTTAvailable,
+      method: currentSTTState.method,
+      isListening: currentSTTState.isListening,
+      hasTranscript: !!currentSTTState.transcript,
+      error: currentSTTState.error
+    };
+    console.log('STT Debug Info:', debugInfo);
+  }, [
+    isSTTAvailable, 
+    currentSTTState.method, 
+    currentSTTState.isListening, 
+    currentSTTState.error
+  ]);
 
   // Функция для переключения голосового ввода
   const toggleVoiceRecognition = useCallback(async () => {
@@ -116,15 +121,12 @@ export function ModernChatInput({
     }
   }, [isSTTAvailable, startListening]);
 
-  // Зависимости для переключения
+  // Зависимости для переключения - упрощено
   useEffect(() => {
-    console.log('STT State change:', {
-      isListening: currentSTTState.isListening,
-      isProcessing: currentSTTState.isProcessing,
-      transcript: currentSTTState.transcript,
-      error: currentSTTState.error,
-    });
-  }, [currentSTTState.isListening, currentSTTState.isProcessing, currentSTTState.transcript, currentSTTState.error]);
+    if (currentSTTState.transcript && currentSTTState.transcript !== input) {
+      console.log('STT transcript received:', currentSTTState.transcript);
+    }
+  }, [currentSTTState.transcript, input]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

@@ -126,8 +126,6 @@ export function useVoiceUnified() {
       if (!supportDetails.hasWebSpeechAPI) {
         console.log('Web Speech API недоступен, переключаемся на Whisper');
         setVoiceState(prev => ({ ...prev, method: 'whisper' }));
-        // Повторно вызываем с новым методом
-        setTimeout(() => startListening(), 100);
         return;
       }
       
@@ -140,7 +138,7 @@ export function useVoiceUnified() {
       
       await startWhisperListening();
     }
-  }, [voiceState.method, supportDetails]);
+  }, [voiceState.method, supportDetails.hasWebSpeechAPI, supportDetails.hasWhisperAPI]);
 
   const startWebSpeechListening = useCallback(async () => {
     console.log('Starting Web Speech API listening...');
@@ -273,9 +271,12 @@ export function useVoiceUnified() {
     }));
   }, [voiceState.isListening, whisperSTT]);
 
-  // Синхронизация состояния Whisper
+  // Синхронизация состояния Whisper - избегаем циклов
   useEffect(() => {
-    if (voiceState.method === 'whisper') {
+    if (voiceState.method === 'whisper' && 
+        (whisperSTT.state.transcript !== voiceState.transcript ||
+         whisperSTT.state.isRecording !== voiceState.isListening ||
+         whisperSTT.state.isProcessing !== voiceState.isProcessing)) {
       setVoiceState(prev => ({
         ...prev,
         isListening: whisperSTT.state.isRecording,
@@ -285,7 +286,17 @@ export function useVoiceUnified() {
         error: whisperSTT.state.error,
       }));
     }
-  }, [whisperSTT.state, voiceState.method]);
+  }, [
+    whisperSTT.state.isRecording, 
+    whisperSTT.state.isProcessing, 
+    whisperSTT.state.transcript, 
+    whisperSTT.state.confidence, 
+    whisperSTT.state.error,
+    voiceState.method,
+    voiceState.transcript,
+    voiceState.isListening,
+    voiceState.isProcessing
+  ]);
 
   const stopListening = useCallback(() => {
     console.log('Stopping unified STT...');
@@ -313,14 +324,26 @@ export function useVoiceUnified() {
       isListening: false,
       isProcessing: false,
     }));
-  }, [voiceState.method, whisperSTT]);
+  }, [voiceState.method, whisperSTT.stopRecording]);
 
-  // Очистка при размонтировании
+  // Очистка при размонтировании - избегаем зависимости от изменяющихся функций
   useEffect(() => {
     return () => {
-      stopListening();
+      // Прямая очистка без вызова stopListening
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (error) {
+          console.error('Error stopping recognition on unmount:', error);
+        }
+      }
+      
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
     };
-  }, [stopListening]);
+  }, []);
 
   const isSupported = supportDetails.hasWebSpeechAPI || supportDetails.hasWhisperAPI;
 
