@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ function App() {
   const [currentWorkMode, setCurrentWorkMode] = useState<WorkMode>('act');
   const [sidebarCollapsed, setSidebarCollapsed] = useKV<boolean>('sidebar-collapsed', false);
   
-  // Memoize agent system and voice recognition to prevent unnecessary re-renders
+  // Use hooks to prevent resolver issues
   const agentSystem = useAgentSystem();
   const voiceRecognition = useVoiceUnified();
   const { speak: ttsSpeak, stop: ttsStop } = useTTS();
@@ -250,19 +250,21 @@ function App() {
       setIsProcessing(false);
     }
   }, [
+    createMessage,
+    setMessages,
+    addMessageToContext,
     awaitingConfirmation,
     currentPlan,
     createPlan,
     confirmPlan,
     executePlan,
-    addMessageToContext,
     ttsSpeak
   ]);
 
   const handleClearHistory = useCallback(() => {
     setMessages([]);
     toast.success('История чата очищена');
-  }, []);
+  }, [setMessages]);
 
   const renderMode = () => {
     switch (currentMode) {

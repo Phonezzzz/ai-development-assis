@@ -87,7 +87,7 @@ export function ModernChatInput({
     
     onSubmit(input, workMode || 'plan', isVoiceInput);
     setInput('');
-  }, [input, workMode, onSubmit, disabled, voiceState.isListening]);
+  }, [input, workMode, onSubmit, disabled, currentSTTState.isListening]);
 
   // Debug информация
   useEffect(() => {
@@ -124,7 +124,7 @@ export function ModernChatInput({
       transcript: currentSTTState.transcript,
       error: currentSTTState.error,
     });
-  }, [isSTTAvailable, currentSTTState, startListening, stopListening]);
+  }, [currentSTTState.isListening, currentSTTState.isProcessing, currentSTTState.transcript, currentSTTState.error]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -230,9 +230,54 @@ export function ModernChatInput({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuLabel>Локальные модели</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => {
+                    const url = prompt('Введите адрес локального сервера:', 'http://localhost:11964');
+                    if (url) {
+                      // Store the local server URL and refresh models
+                      localStorage.setItem('local-server-url', url);
+                      window.location.reload(); // Simple refresh for now
+                    }
+                  }}
+                  className="text-blue-400 font-medium"
+                >
+                  ⚙️ Настроить локальный сервер
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                
                 <DropdownMenuLabel>Модели</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {availableModels.map((model) => (
+                
+                {/* Local Models Section */}
+                {availableModels.filter(m => m.isLocal).length > 0 && (
+                  <>
+                    {availableModels.filter(m => m.isLocal).map((model) => (
+                      <DropdownMenuItem
+                        key={model.id}
+                        onClick={() => selectModel(model.id)}
+                        className={cn(
+                          "flex items-center justify-between",
+                          selectedModel === model.id && "bg-accent"
+                        )}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium text-green-400">🏠 {model.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            Локальная модель
+                          </span>
+                        </div>
+                        {selectedModel === model.id && (
+                          <div className="w-2 h-2 bg-primary rounded-full" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
+                {/* OpenRouter Models */}
+                {availableModels.filter(m => !m.isLocal).map((model) => (
                   <DropdownMenuItem
                     key={model.id}
                     onClick={() => selectModel(model.id)}
