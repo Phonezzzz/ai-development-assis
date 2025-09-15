@@ -15,6 +15,7 @@ export interface ModelOption {
     completion: number;
   };
   free?: boolean;
+  isLocal?: boolean;
 }
 
 export type AgentStatus = 'idle' | 'thinking' | 'active' | 'complete' | 'error';

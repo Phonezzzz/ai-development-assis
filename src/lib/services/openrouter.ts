@@ -11,6 +11,7 @@ export interface Model {
   };
   contextLength: number;
   free?: boolean;
+  isLocal?: boolean;
 }
 
 export interface ChatMessage {
@@ -49,17 +50,70 @@ export interface ChatCompletionResponse {
 class OpenRouterService {
   private baseUrl = 'https://openrouter.ai/api/v1';
   private apiKey = config.openrouter.apiKey;
+  private localServerUrl: string | null = null;
 
   constructor() {
     console.log('OpenRouter service initialized with API key:', this.apiKey ? 'Set' : 'Not set');
+    // Load saved local server URL
+    this.localServerUrl = localStorage.getItem('local-server-url');
   }
 
   isConfigured(): boolean {
     return !!this.apiKey && this.apiKey !== '';
   }
 
+  setLocalServerUrl(url: string) {
+    this.localServerUrl = url;
+    localStorage.setItem('local-server-url', url);
+  }
+
+  getLocalServerUrl(): string | null {
+    return this.localServerUrl;
+  }
+
+  async getLocalModels(): Promise<Model[]> {
+    if (!this.localServerUrl) return [];
+
+    try {
+      const response = await fetch(`${this.localServerUrl}/v1/models`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const models = data.data || [];
+        
+        return models.map((model: any) => ({
+          id: model.id,
+          name: model.id || 'Локальная модель',
+          provider: 'Локальный сервер',
+          maxTokens: 4096,
+          pricing: { prompt: 0, completion: 0 },
+          contextLength: model.context_length || 4096,
+          free: true,
+          isLocal: true,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching local models:', error);
+    }
+
+    return [];
+  }
+
   async getModels(): Promise<Model[]> {
-    // Always try to fetch from OpenRouter API first
+    const allModels: Model[] = [];
+
+    // First, get local models if available
+    const localModels = await this.getLocalModels();
+    if (localModels.length > 0) {
+      allModels.push(...localModels);
+    }
+
+    // Then try to fetch from OpenRouter API
     try {
       const response = await fetch(`${this.baseUrl}/models`, {
         method: 'GET',
@@ -75,7 +129,7 @@ class OpenRouterService {
         const models = data.data || [];
         
         // Transform OpenRouter models to our format
-        return models.map((model: any) => ({
+        const openRouterModels = models.map((model: any) => ({
           id: model.id,
           name: model.name || model.id,
           provider: this.extractProvider(model.id),
@@ -86,26 +140,36 @@ class OpenRouterService {
           },
           contextLength: model.context_length || 4096,
           free: (parseFloat(model.pricing?.prompt || '0') === 0 && parseFloat(model.pricing?.completion || '0') === 0) || model.id.includes(':free'),
+          isLocal: false,
         })).filter((model: Model) => 
           // Filter out models that don't support chat completion
           !model.id.includes('embedding') && 
           !model.id.includes('tts') && 
           !model.id.includes('whisper') &&
           !model.id.includes('dall-e')
-        ).sort((a: Model, b: Model) => {
-          // Sort by provider, then by name
-          if (a.provider !== b.provider) {
-            return a.provider.localeCompare(b.provider);
-          }
-          return a.name.localeCompare(b.name);
-        });
+        );
+
+        allModels.push(...openRouterModels);
       }
     } catch (error) {
       console.error('Error fetching models from OpenRouter:', error);
     }
 
-    // Fallback to mock models
-    return this.getMockModels();
+    // If no models found, use fallback
+    if (allModels.length === 0) {
+      allModels.push(...this.getMockModels());
+    }
+
+    // Sort models: local models first, then by provider and name
+    return allModels.sort((a: Model, b: Model) => {
+      if (a.isLocal && !b.isLocal) return -1;
+      if (!a.isLocal && b.isLocal) return 1;
+      
+      if (a.provider !== b.provider) {
+        return a.provider.localeCompare(b.provider);
+      }
+      return a.name.localeCompare(b.name);
+    });
   }
 
   private extractProvider(modelId: string): string {
@@ -162,6 +226,13 @@ class OpenRouterService {
   }
 
   async createChatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+    // Check if this is a local model
+    const isLocalModel = await this.isModelLocal(request.model);
+    
+    if (isLocalModel && this.localServerUrl) {
+      return this.createLocalChatCompletion(request);
+    }
+
     if (!this.isConfigured()) {
       // Return mock response for demo
       return this.getMockChatCompletion(request);
@@ -191,6 +262,48 @@ class OpenRouterService {
       return await response.json();
     } catch (error) {
       console.error('Error in chat completion:', error);
+      // Fallback to mock response
+      return this.getMockChatCompletion(request);
+    }
+  }
+
+  private async isModelLocal(modelId: string): Promise<boolean> {
+    if (!this.localServerUrl) return false;
+    
+    try {
+      const localModels = await this.getLocalModels();
+      return localModels.some(model => model.id === modelId);
+    } catch {
+      return false;
+    }
+  }
+
+  private async createLocalChatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+    if (!this.localServerUrl) {
+      throw new Error('Local server URL not configured');
+    }
+
+    try {
+      const response = await fetch(`${this.localServerUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...request,
+          temperature: request.temperature || 0.7,
+          max_tokens: request.max_tokens || 4000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Local API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error in local chat completion:', error);
       // Fallback to mock response
       return this.getMockChatCompletion(request);
     }

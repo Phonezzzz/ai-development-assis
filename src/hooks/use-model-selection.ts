@@ -20,11 +20,14 @@ export function useModelSelection() {
         description: `${formatContextLength(model.contextLength)} • $${model.pricing.prompt}/$${model.pricing.completion}`,
         contextLength: model.contextLength,
         pricing: model.pricing,
-        free: model.pricing.prompt === 0 && model.pricing.completion === 0
+        free: model.pricing.prompt === 0 && model.pricing.completion === 0,
+        isLocal: model.isLocal
       }));
       
-      // Sort models: free first, then by provider
+      // Sort models: local first, then free, then by provider
       modelOptions.sort((a, b) => {
+        if (a.isLocal && !b.isLocal) return -1;
+        if (!a.isLocal && b.isLocal) return 1;
         if (a.free && !b.free) return -1;
         if (!a.free && b.free) return 1;
         return a.provider.localeCompare(b.provider);
