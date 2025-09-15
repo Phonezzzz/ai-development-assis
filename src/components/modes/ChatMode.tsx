@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ModernChatInput } from '@/components/ModernChatInput';
 import { MessageActions } from '@/components/MessageActions';
 import { STTDebug } from '@/components/STTDebug';
+import { ApiConfigurationWarning } from '@/components/ApiConfigurationWarning';
 import { Message, AgentType, WorkMode } from '@/lib/types';
 import { cn, formatTimestamp } from '@/lib/utils';
 import { useVoiceUnified } from '@/hooks/use-voice-unified';
@@ -108,6 +109,9 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
         <ScrollArea className="h-full chat-scroll-area">
           {messages.length === 0 ? (
             <div className="p-8">
+              {/* API Configuration Status */}
+              <ApiConfigurationWarning />
+              
               <Card className="p-8 text-center">
                 <div className="text-4xl mb-4">💬</div>
                 <h3 className="font-semibold text-lg mb-2">Начните беседу</h3>
@@ -119,6 +123,9 @@ export function ChatMode({ messages, onSendMessage, isProcessing }: ChatModeProp
           ) : (
             <div className="messages-container">
               <div className="messages-list">
+                {/* API Configuration Status */}
+                <ApiConfigurationWarning />
+                
                 {/* Debug panel - remove in production */}
                 <STTDebug />
                 
