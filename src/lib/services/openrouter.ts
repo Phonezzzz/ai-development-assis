@@ -463,6 +463,15 @@ class OpenRouterService {
         free: false,
       },
       {
+        id: 'google/gemini-2.5-flash-image-preview',
+        name: 'Gemini 2.5 Flash Image Preview',
+        provider: 'Google',
+        maxTokens: 4096,
+        pricing: { prompt: 0.00025, completion: 0.0075 },
+        contextLength: 1000000,
+        free: false,
+      },
+      {
         id: 'google/gemini-pro',
         name: 'Gemini Pro',
         provider: 'Google',

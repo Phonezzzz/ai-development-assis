@@ -5,11 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ModernChatInput } from '@/components/ModernChatInput';
 import { GeneratedImage, WorkMode } from '@/lib/types';
 import { useKV } from '@github/spark/hooks';
 import { formatDisplayDate } from '@/lib/utils';
-import { Image, Download, Trash, Plus } from '@phosphor-icons/react';
+import { imageGenerationService } from '@/lib/services/image-generation';
+import { Image, Download, Trash, Plus, Robot } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 
 interface ImageCreatorModeProps {
   messages?: any[];
@@ -23,6 +26,9 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
   const [images, setImages] = useKV<GeneratedImage[]>('generated-images', []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [workMode, setWorkMode] = useState<WorkMode>('plan');
+  const [selectedModel, setSelectedModel] = useState('google/gemini-2.5-flash-image-preview');
+
+  const imageModels = imageGenerationService.getImageModels();
 
   const generateImage = async () => {
     if (!prompt.trim()) return;
@@ -32,22 +38,38 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
     const newImage: GeneratedImage = {
       id: `img_${Date.now()}`,
       prompt: prompt.trim(),
-      url: `https://picsum.photos/512/512?random=${Date.now()}`, // Mock image URL
+      url: '', // Will be set after generation
       timestamp: new Date(),
       isGenerating: true,
     };
 
     setImages((prev) => [newImage, ...(prev || [])]);
 
-    // Simulate generation time
-    setTimeout(() => {
+    try {
+      // Generate image using the selected model
+      const imageUrl = await imageGenerationService.generateImage({
+        prompt: prompt.trim(),
+        model: selectedModel,
+        width: 512,
+        height: 512,
+      });
+
+      // Update the image with the generated URL
       setImages((prev) => (prev || []).map(img => 
         img.id === newImage.id 
-          ? { ...img, isGenerating: false }
+          ? { ...img, url: imageUrl, isGenerating: false }
           : img
       ));
+
+      toast.success('Изображение сгенерировано!');
+    } catch (error) {
+      console.error('Error generating image:', error);
+      // Remove failed image from list
+      setImages((prev) => (prev || []).filter(img => img.id !== newImage.id));
+      toast.error('Ошибка генерации изображения');
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+    }
 
     setPrompt('');
     setDetailedPrompt('');
@@ -78,6 +100,34 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
 
   return (
     <div className="flex flex-col h-full max-h-screen">
+      {/* Model Selector Header */}
+      <div className="p-4 border-b bg-card/80 backdrop-blur-sm flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Robot size={20} className="text-primary" />
+            <span className="text-sm font-medium">Модель генерации:</span>
+          </div>
+          <Select value={selectedModel} onValueChange={setSelectedModel}>
+            <SelectTrigger className="w-80">
+              <SelectValue placeholder="Выберите модель" />
+            </SelectTrigger>
+            <SelectContent>
+              {imageModels.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{model.name}</span>
+                    <span className="text-xs text-muted-foreground">{model.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Badge variant="outline" className="text-xs">
+            {imageModels.find(m => m.id === selectedModel)?.maxResolution || '512x512'}
+          </Badge>
+        </div>
+      </div>
+
       <ScrollArea className="flex-1 p-4">
         {(images || []).length === 0 ? (
           <Card className="p-8 text-center">
@@ -163,7 +213,7 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
               }
             }
           }}
-          placeholder="Опишите изображение для генерации..."
+          placeholder="Опишите изображение для генерации с помощью Gemini 2.5 Flash Image Preview..."
           disabled={isGenerating}
           workMode={workMode}
           setWorkMode={setWorkMode}
@@ -176,7 +226,7 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
     const newImage: GeneratedImage = {
       id: `img_${Date.now()}`,
       prompt: promptText.trim(),
-      url: `https://picsum.photos/512/512?random=${Date.now()}`, // Mock image URL
+      url: '', // Will be set after generation
       timestamp: new Date(),
       isGenerating: true,
     };
@@ -184,14 +234,26 @@ export function ImageCreatorMode({ onSendMessage }: ImageCreatorModeProps) {
     setImages((prev) => [newImage, ...(prev || [])]);
     setIsGenerating(true);
 
-    // Simulate generation time
-    setTimeout(() => {
+    // Generate image using the service
+    imageGenerationService.generateImage({
+      prompt: promptText.trim(),
+      model: selectedModel,
+      width: 512,
+      height: 512,
+    }).then((imageUrl) => {
       setImages((prev) => (prev || []).map(img => 
         img.id === newImage.id 
-          ? { ...img, isGenerating: false }
+          ? { ...img, url: imageUrl, isGenerating: false }
           : img
       ));
+      toast.success('Изображение сгенерировано!');
+    }).catch((error) => {
+      console.error('Error generating image:', error);
+      // Remove failed image from list
+      setImages((prev) => (prev || []).filter(img => img.id !== newImage.id));
+      toast.error('Ошибка генерации изображения');
+    }).finally(() => {
       setIsGenerating(false);
-    }, 3000);
+    });
   }
 }

@@ -250,22 +250,19 @@ function App() {
       setIsProcessing(false);
     }
   }, [
-    createMessage,
-    setMessages,
-    addMessageToContext,
     awaitingConfirmation,
     currentPlan,
     createPlan,
     confirmPlan,
     executePlan,
-    setAwaitingConfirmation,
+    addMessageToContext,
     ttsSpeak
   ]);
 
   const handleClearHistory = useCallback(() => {
     setMessages([]);
     toast.success('История чата очищена');
-  }, [setMessages]);
+  }, []);
 
   const renderMode = () => {
     switch (currentMode) {
